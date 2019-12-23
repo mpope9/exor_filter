@@ -30,7 +30,7 @@ true    = exor_filter:xor8_contain(Filter2, 5).
 Example usage from Elixir:
 ```elixir
 ...
-Alias :exor_filter, as: XorFilter
+alias :exor_filter, as: XorFilter
 ...
 true =
    [1, 2, 3, 4]

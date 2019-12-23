@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include "erl_nif.h"
 #include "xorfilter.h"
-//#include "xor8_filter_resource.h"
 
 static ErlNifResourceType* xor8_resource_type;
 static ErlNifResourceType* xor16_resource_type;
@@ -19,7 +18,6 @@ typedef struct {
    int         is_filter_allocated;
    xor16_t*    filter;
 } xor16_filter_resource;
-
 
 void destroy_xor8_filter_resource(ErlNifEnv* env, void* obj) 
 {
@@ -185,13 +183,16 @@ xor8_contain_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
       return enif_make_badarg(env);
    }
 
-   xor8_t* filter;
-   if(!enif_get_resource(env, argv[0], xor8_resource_type, (void**) &filter)) {
+   xor8_filter_resource* filter_resource;
+   if(!enif_get_resource(env, argv[0], xor8_resource_type, (void**) &filter_resource)) 
+   {
       return mk_error(env, "get_filter_for_contains_error");
    }
+   xor8_t* filter = filter_resource->filter;
 
    ErlNifUInt64 key;
-   if(!enif_get_uint64(env, argv[1], &key)) {
+   if(!enif_get_uint64(env, argv[1], &key)) 
+   {
       return mk_error(env, "get_key_for_contains_error");
    }
 
@@ -214,12 +215,12 @@ xor8_free_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
       return enif_make_badarg(env);
    }
 
-   xor8_t* filter;
-   if(!enif_get_resource(env, argv[0], xor8_resource_type, (void**) &filter)) {
+   xor8_filter_resource* filter_resource;
+   if(!enif_get_resource(env, argv[0], xor8_resource_type, (void**) &filter_resource)) {
       return mk_error(env, "get_filter_for_deallocation_error");
    }
 
-   enif_release_resource(filter);
+   enif_release_resource(filter_resource);
 
    return mk_atom(env, "ok");
 }
@@ -318,10 +319,11 @@ xor16_contain_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
       return enif_make_badarg(env);
    }
 
-   xor16_t* filter;
-   if(!enif_get_resource(env, argv[0], xor16_resource_type, (void**) &filter)) {
+   xor16_filter_resource* filter_resource;
+   if(!enif_get_resource(env, argv[0], xor16_resource_type, (void**) &filter_resource)) {
       return mk_error(env, "get_filter_for_contains_error");
    }
+   xor16_t* filter = filter_resource->filter;
 
    ErlNifUInt64 key;
    if(!enif_get_uint64(env, argv[1], &key)) {
@@ -347,12 +349,12 @@ xor16_free_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
       return enif_make_badarg(env);
    }
 
-   xor16_t* filter;
-   if(!enif_get_resource(env, argv[0], xor16_resource_type, (void**) &filter)) {
+   xor16_filter_resource* filter_resource;
+   if(!enif_get_resource(env, argv[0], xor16_resource_type, (void**) &filter_resource)) {
       return mk_error(env, "get_filter_for_deallocation_error");
    }
 
-   enif_release_resource(filter);
+   enif_release_resource(filter_resource);
 
    return mk_atom(env, "ok");
 }

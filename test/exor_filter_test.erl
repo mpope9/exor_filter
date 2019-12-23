@@ -21,8 +21,8 @@ basic_test_() ->
           ?_test(xor8_contain_custom_key_not_uint64()),
           ?_test(xor8_valid_filter_in_contain_test()),
           ?_test(xor8_valid_filter_in_free_test()),
-          ?_test(xor8_cannot_free_twice_test())
-         ]
+          ?_test(xor8_cannot_free_twice_test()),
+          ?_test(xor8_large_test())]
       },
       {
          "xor16 Test Group",
@@ -41,7 +41,8 @@ basic_test_() ->
           ?_test(xor16_contain_custom_key_not_uint64()),
           ?_test(xor16_valid_filter_in_contain_test()),
           ?_test(xor16_valid_filter_in_free_test()),
-          ?_test(xor16_cannot_free_twice_test())]
+          ?_test(xor16_cannot_free_twice_test()),
+          ?_test(xor16_large_test())]
       }
    ].
 
@@ -131,6 +132,12 @@ xor8_cannot_free_twice_test() ->
    ?_assertMatch(ok, exor_filter:xor8_free(Filter)),
    ?_assertMatch(ok, exor_filter:xor8_free(Filter)).
 
+xor8_large_test() ->
+   X = lists:seq(1, 10000000),
+   Filter = exor_filter:xor8_initialize(X),
+   ?_assertMatch(true, exor_filter:xor8_contain(Filter, 100)),
+   exor_filter:xor8_free(Filter).
+
 %% Begin xor16 tests.
 xor16_base_test() ->
    Filter = exor_filter:xor16_initialize([1, 2, 3]),
@@ -215,3 +222,9 @@ xor16_cannot_free_twice_test() ->
    Filter = exor_filter:xor16_initialize([1, 2, 3]),
    ?_assertMatch(ok, exor_filter:xor16_free(Filter)),
    ?_assertMatch(ok, exor_filter:xor16_free(Filter)).
+
+xor16_large_test() ->
+   X = lists:seq(1, 10000000),
+   Filter = exor_filter:xor16_initialize(X),
+   ?_assertMatch(true, exor_filter:xor16_contain(Filter, 100)),
+   exor_filter:xor16_free(Filter).

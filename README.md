@@ -27,6 +27,14 @@ false   = exor_filter:xor8_contain(Filter2, 2).
 true    = exor_filter:xor8_contain(Filter2, 5).
 ```
 
+There is an option to pass a hash function during intialization.  It must return a unsigned 64 bit number and have an airty of `/1`.
+```
+Fun    = fun(X) -> X + 1 end,
+Filter = exor_filter:xor8_initialize([1, 2, 3], Fun).
+true   = exor_filter:xor8_contain(Filter, 4).
+false  = exor_filter:xor8_contain(Filter, 1).
+```
+
 Example usage from Elixir:
 ```elixir
 ...
@@ -69,5 +77,10 @@ Test
 
     $ rebar3 eunit
     $ rebar3 cover
+
+Docs
+-----
+
+    $ rebar3 edoc
 
 Coverage is low due to suggested nif error handling code, but basic functionality is covered.

@@ -9,7 +9,7 @@ Be wary of memory usage when using this module.
 
 ### Example Usage
 Basic usage is as follows:
-```
+```erlang
 Filter = exor_filter:xor8_initialize([1, 2, 3]).
 true   = exor_filter:xor8_contain(Filter, 2).
 false  = exor_filter:xor8_contain(Filter, 6).
@@ -17,7 +17,7 @@ ok     = exor_filter:xor8_free(Filter).
 ```
 
 Filters are initialized independently:
-```
+```erlang
 Filter1 = exor_filter:xor8_initialize([1, 2, 3]).
 Filter2 = exor_filter:xor8_initialize([4, 5, 6]).
 
@@ -28,7 +28,7 @@ true    = exor_filter:xor8_contain(Filter2, 5).
 ```
 
 Example usage from Elixir:
-```
+```elixir
 ...
 Alias :exor_filter, as: XorFilter
 ...
@@ -40,7 +40,7 @@ true =
 ```
 
 `contain/3` can return a custom value instead of `false` if the value isn't present in the filter:
-```
+```erlang
 Filter1 = exor_filter:xor8_initialize([1, 2, 3]).
 true = exor_filter:xor8_contain(Filter1, 2, {error, not_found}).
 {error, not_found} = exor_filter:xor8_contain(Filter1, 6, {error, not_found}).

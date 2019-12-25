@@ -25,19 +25,22 @@ https://github.com/FastFilter/xor_singleheader</p>
  
   <p>Example Usage:</p>
  
-  <pre>  Filter = exor_filter:xor8_initialize([1, 2, 3]).
-  true   = exor_filter:xor8_contain(Filter, 2).
-  false  = exor_filter:xor8_contain(Filter, 6).
+  <pre>  Filter = exor_filter:xor8(["test1", "test2", "test3"]),
+  true   = exor_filter:xor8_contain(Filter, "test1"),
+  false  = exor_filter:xor8_contain(Filter, "test6"),
   ok     = exor_filter:xor8_free(Filter).</pre>
  
   Filters are initialized independently:
-  <pre>  Filter1 = exor_filter:xor8_initialize([1, 2, 3]).
-  Filter2 = exor_filter:xor8_initialize([4, 5, 6]).
+  <pre>  Filter1 = exor_filter:xor8([1, 2, 3]),
+  Filter2 = exor_filter:xor8([4, 5, 6]),
  
-  false   = exor_filter:xor8_contain(Filter1, 6).
-  true    = exor_filter:xor8_contain(Filter1, 2).
-  false   = exor_filter:xor8_contain(Filter2, 2).
-  true    = exor_filter:xor8_contain(Filter2, 5).</pre>
+  false   = exor_filter:xor8_contain(Filter1, 6),
+  true    = exor_filter:xor8_contain(Filter1, 2),
+  false   = exor_filter:xor8_contain(Filter2, 2),
+  true    = exor_filter:xor8_contain(Filter2, 5),
+ 
+  ok      = exor_filter:xor8_free(Filter1),
+  ok      = exor_filter:xor8_free(Filter2).</pre>
  
   Example usage from Elixir:
   <pre>  ...
@@ -45,137 +48,121 @@ https://github.com/FastFilter/xor_singleheader</p>
   ...
   true =
      [1, 2, 3, 4]
-     |&gt; XorFilter.xor8_initialize()
+     |&gt; XorFilter.xor8()
      |&gt; XorFilter.xor8_contain(1)</pre>
  
   <p>The usage of the xor16 is the same.  That structure is larger, but  
 has a smaller false positive rate.</p>
  
-  <p>The buffered versions of initialize are provided for larger data sets.  
-This can be faster.  See xor8_buffered_initialize/2 for more information.</p>
+  The buffered versions of initialize are provided for larger data sets.
+  This can be faster.  See xor8_buffered/1 for more information.
  
-  Versions of the initialization function that can be passed a hash
-  function are provided, so that data can be passed without being
-  hashed first.
-  See <code>xor8_initialize/2</code> for more details.
 <h2><a name="index">Function Index</a></h2>
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#xor16_buffered_initialize-1">xor16_buffered_initialize/1</a></td><td>See the xor8_buffered_initialize/1 documentation.</td></tr>
-<tr><td valign="top"><a href="#xor16_buffered_initialize-2">xor16_buffered_initialize/2</a></td><td>See the xor8_buffered_initialize/2 documentation.</td></tr>
-<tr><td valign="top"><a href="#xor16_contain-2">xor16_contain/2</a></td><td>See the xor8_contain/2 documentation.</td></tr>
-<tr><td valign="top"><a href="#xor16_contain-3">xor16_contain/3</a></td><td>See the xor8_contain/3 documentation.</td></tr>
-<tr><td valign="top"><a href="#xor16_free-1">xor16_free/1</a></td><td>See the xor8_free/1 documentation.</td></tr>
-<tr><td valign="top"><a href="#xor16_initialize-1">xor16_initialize/1</a></td><td>See the xor8_initialize/1 documentation.</td></tr>
-<tr><td valign="top"><a href="#xor16_initialize-2">xor16_initialize/2</a></td><td>See the xor8_initialize/2 documentation.</td></tr>
-<tr><td valign="top"><a href="#xor8_buffered_initialize-1">xor8_buffered_initialize/1</a></td><td>Similar to the initialize function, but is a buffered version for lists  
-That are over 100,000,000 keys.</td></tr>
-<tr><td valign="top"><a href="#xor8_buffered_initialize-2">xor8_buffered_initialize/2</a></td><td>Similar to the initialize function, but is a buffered version for lists  
-That are over 100,000,000 keys.</td></tr>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#xor16-1">xor16/1</a></td><td>See the xor8/2 documentation.</td></tr>
+<tr><td valign="top"><a href="#xor16-2">xor16/2</a></td><td>Initializes the xor filter, and runs the specified pre-defined  
+hash function on each of the elements.</td></tr>
+<tr><td valign="top"><a href="#xor16_buffered-1">xor16_buffered/1</a></td><td>Similar to the initialize function, but is a buffered version for lists
+  that are large.</td></tr>
+<tr><td valign="top"><a href="#xor16_buffered-2">xor16_buffered/2</a></td><td>Similar to the initialize function, but is a buffered version for lists  
+that are over 100,000,000 keys.</td></tr>
+<tr><td valign="top"><a href="#xor16_contain-2">xor16_contain/2</a></td><td>Tests to see if the passed argument is in the filter.</td></tr>
+<tr><td valign="top"><a href="#xor16_contain-3">xor16_contain/3</a></td><td>Tests to see if the passed argument is in the filter.</td></tr>
+<tr><td valign="top"><a href="#xor16_free-1">xor16_free/1</a></td><td>Frees the memory of the filter.</td></tr>
+<tr><td valign="top"><a href="#xor8-1">xor8/1</a></td><td>Initializes the xor filter, and runs the default hash function on  
+each of the elements in the list.</td></tr>
+<tr><td valign="top"><a href="#xor8-2">xor8/2</a></td><td>Initializes the xor filter, and runs the specified pre-defined  
+hash function on each of the elements.</td></tr>
+<tr><td valign="top"><a href="#xor8_buffered-1">xor8_buffered/1</a></td><td>Similar to the initialize function, but is a buffered version for lists
+  that are large.</td></tr>
+<tr><td valign="top"><a href="#xor8_buffered-2">xor8_buffered/2</a></td><td>Similar to the initialize function, but is a buffered version for lists  
+that are over 100,000,000 keys.</td></tr>
 <tr><td valign="top"><a href="#xor8_contain-2">xor8_contain/2</a></td><td>Tests to see if the passed argument is in the filter.</td></tr>
 <tr><td valign="top"><a href="#xor8_contain-3">xor8_contain/3</a></td><td>Tests to see if the passed argument is in the filter.</td></tr>
 <tr><td valign="top"><a href="#xor8_free-1">xor8_free/1</a></td><td>Frees the memory of the filter.</td></tr>
-<tr><td valign="top"><a href="#xor8_initialize-1">xor8_initialize/1</a></td><td>Initializes the xor filter on a passed list.</td></tr>
-<tr><td valign="top"><a href="#xor8_initialize-2">xor8_initialize/2</a></td><td>Initializes the xor filter, and runs the specified hash function on  
-each of the elements.</td></tr>
 </table>
 
 <h2><a name="functions">Function Details</a></h2>
 
-<h3 class="function"><a name="xor16_buffered_initialize-1">xor16_buffered_initialize/1</a></h3>
+<h3 class="function"><a name="xor16-1">xor16/1</a></h3>
 <div class="spec">
-<p><tt>xor16_buffered_initialize(X1::list()) -&gt; reference() | {error, string()}</tt><br></p>
-</div><p>See the xor8_buffered_initialize/1 documentation.</p>
+<p><tt>xor16(List::list()) -&gt; {reference(), default_hash} | {error, atom()}</tt><br></p>
+</div><p>See the xor8/2 documentation.</p>
 
-<h3 class="function"><a name="xor16_buffered_initialize-2">xor16_buffered_initialize/2</a></h3>
+<h3 class="function"><a name="xor16-2">xor16/2</a></h3>
 <div class="spec">
-<p><tt>xor16_buffered_initialize(List::list(), HashFunction::function()) -&gt; reference() | {error, string()}</tt><br></p>
-</div><p>See the xor8_buffered_initialize/2 documentation.</p>
+<p><tt>xor16(List::list(), HashFunction::atom() | function()) -&gt; {reference(), atom() | function()} | {error, atom()}</tt><br></p>
+</div><p><p>Initializes the xor filter, and runs the specified pre-defined  
+hash function on each of the elements.</p>
+ 
+  See the xor8/2 documentation.</p>
+
+<h3 class="function"><a name="xor16_buffered-1">xor16_buffered/1</a></h3>
+<div class="spec">
+<p><tt>xor16_buffered(List::list()) -&gt; {reference(), atom()} | {error, atom()}</tt><br></p>
+</div><p>Similar to the initialize function, but is a buffered version for lists
+  that are large.  This version uses the default hash.</p>
+
+<h3 class="function"><a name="xor16_buffered-2">xor16_buffered/2</a></h3>
+<div class="spec">
+<p><tt>xor16_buffered(List::list(), HashFunction::atom() | function()) -&gt; {reference(), atom() | function()} | {error, atom()}</tt><br></p>
+</div><p><p>Similar to the initialize function, but is a buffered version for lists  
+that are over 100,000,000 keys.  Use for greater speed.</p>
+ 
+  <p>See xor16/1 for example usage.</p>
+ 
+  Returns a <code>Ref&lt;&gt;</code> to a filter to be used in <code>contain</code> and <code>free</code>.</p>
 
 <h3 class="function"><a name="xor16_contain-2">xor16_contain/2</a></h3>
 <div class="spec">
-<p><tt>xor16_contain(X1::reference(), X2::integer()) -&gt; true | false</tt><br></p>
-</div><p>See the xor8_contain/2 documentation.</p>
+<p><tt>xor16_contain(X1::{reference(), atom() | function()}, Key::term()) -&gt; true | false</tt><br></p>
+</div><p><p>Tests to see if the passed argument is in the filter.  The first  
+argument must be the pre-initialized filter.</p>
+ 
+  <p>DO NOT PASS PRE-HASHED VALUES.  The method / fun passed to the  
+initialization function is saved, and is used to compute the hash.</p>
+ 
+  Returns true if the element exists (or if there is a false positive).
+  False if not.</p>
 
 <h3 class="function"><a name="xor16_contain-3">xor16_contain/3</a></h3>
 <div class="spec">
-<p><tt>xor16_contain(Filter::reference(), Key::integer(), ReturnValue::any()) -&gt; true | any()</tt><br></p>
-</div><p>See the xor8_contain/3 documentation.</p>
-
-<h3 class="function"><a name="xor16_free-1">xor16_free/1</a></h3>
-<div class="spec">
-<p><tt>xor16_free(X1::reference()) -&gt; true | false</tt><br></p>
-</div><p>See the xor8_free/1 documentation.</p>
-
-<h3 class="function"><a name="xor16_initialize-1">xor16_initialize/1</a></h3>
-<div class="spec">
-<p><tt>xor16_initialize(X1::list()) -&gt; reference() | {error, string()}</tt><br></p>
-</div><p>See the xor8_initialize/1 documentation.</p>
-
-<h3 class="function"><a name="xor16_initialize-2">xor16_initialize/2</a></h3>
-<div class="spec">
-<p><tt>xor16_initialize(List::list(), HashFunction::function()) -&gt; reference() | {error, string()}</tt><br></p>
-</div><p>See the xor8_initialize/2 documentation.</p>
-
-<h3 class="function"><a name="xor8_buffered_initialize-1">xor8_buffered_initialize/1</a></h3>
-<div class="spec">
-<p><tt>xor8_buffered_initialize(X1::list()) -&gt; reference() | {error, string()}</tt><br></p>
-</div><p><p>Similar to the initialize function, but is a buffered version for lists  
-That are over 100,000,000 keys.  Use for greater speed.</p>
- 
-  <p>See xor8_initialize/1 for example usage.</p>
- 
-  Returns a <code>Ref&lt;&gt;</code> to a filter to be used in <code>contain</code> and <code>free</code>.</p>
-
-<h3 class="function"><a name="xor8_buffered_initialize-2">xor8_buffered_initialize/2</a></h3>
-<div class="spec">
-<p><tt>xor8_buffered_initialize(List::list(), HashFunction::function()) -&gt; reference() | {error, string()}</tt><br></p>
-</div><p><p>Similar to the initialize function, but is a buffered version for lists  
-That are over 100,000,000 keys.  Use for greater speed.</p>
- 
-  <p>See xor8_initialize/2 for example usage.</p>
- 
-  Returns a <code>Ref&lt;&gt;</code> to a filter to be used in <code>contain</code> and <code>free</code>.</p>
-
-<h3 class="function"><a name="xor8_contain-2">xor8_contain/2</a></h3>
-<div class="spec">
-<p><tt>xor8_contain(X1::reference(), X2::integer()) -&gt; true | false</tt><br></p>
+<p><tt>xor16_contain(X1::{reference(), atom() | function()}, Key::term(), ReturnValue::any()) -&gt; true | any()</tt><br></p>
 </div><p><p>Tests to see if the passed argument is in the filter.  The first  
-argument must be the pre-initialized filter, the second must be an unsighed  
-64 bit number.</p>
- 
-  Returns <code>true</code> if the element exists (or there is a false positive).
-  Returns <code>false</code> if otherwise.</p>
-
-<h3 class="function"><a name="xor8_contain-3">xor8_contain/3</a></h3>
-<div class="spec">
-<p><tt>xor8_contain(Filter::reference(), Key::integer(), ReturnValue::any()) -&gt; true | any()</tt><br></p>
-</div><p><p>Tests to see if the passed argument is in the filter.  The first  
-argument must be the pre-initialized filter, the second must be an unsighed  
-64 bit number.</p>
+argument must be the pre-initialized filter.</p>
  
   Returns <code>true</code> if the element exists (or there is a false positive).
   The third argument will be returned instead of <code>false</code> if the element is
   not in the filter.</p>
 
-<h3 class="function"><a name="xor8_free-1">xor8_free/1</a></h3>
+<h3 class="function"><a name="xor16_free-1">xor16_free/1</a></h3>
 <div class="spec">
-<p><tt>xor8_free(X1::reference()) -&gt; true | false</tt><br></p>
+<p><tt>xor16_free(X1::{reference(), any()}) -&gt; ok</tt><br></p>
 </div><p><p>Frees the memory of the filter.  These can be large structures, so it  
 is recommended that this is called for cleanup.</p>
  
   Returns <code>ok</code>.</p>
 
-<h3 class="function"><a name="xor8_initialize-1">xor8_initialize/1</a></h3>
+<h3 class="function"><a name="xor8-1">xor8/1</a></h3>
 <div class="spec">
-<p><tt>xor8_initialize(X1::list()) -&gt; reference() | {error, string()}</tt><br></p>
-</div><p><p>Initializes the xor filter on a passed list.  If the list isn't a list  
-of 64 unsigned numbers, an error will be thrown.</p>
+<p><tt>xor8(List::list()) -&gt; {reference(), default_hash} | {error, atom()}</tt><br></p>
+</div><p><p>Initializes the xor filter, and runs the default hash function on  
+each of the elements in the list.  This should be fine for the general case.</p>
  
-  Returns a <code>Ref&lt;&gt;</code> to a filter to be used in <code>contain</code> and <code>free</code>.</p>
+  Returns a {<code>Ref&lt;&gt;</code>, <code>default_hash</code>} to be later used, or an error.</p>
 
-<h3 class="function"><a name="xor8_initialize-2">xor8_initialize/2</a></h3>
+<h3 class="function"><a name="xor8-2">xor8/2</a></h3>
 <div class="spec">
-<p><tt>xor8_initialize(List::list(), HashFunction::function()) -&gt; reference() | {error, string()}</tt><br></p>
-</div><p><p>Initializes the xor filter, and runs the specified hash function on  
+<p><tt>xor8(List::list(), HashFunction::atom() | function()) -&gt; {reference(), atom() | function()} | {error, atom()}</tt><br></p>
+</div><p><p>Initializes the xor filter, and runs the specified pre-defined  
+hash function on each of the elements.</p>
+ 
+  <p>There are predefined hashing function provided, can can be specified by
+  using <code>default_hash</code> or <code>fast_hash</code>.  To pass pre-hashed data, use
+  <code>none</code>.</p>
+ 
+  <p>OR</p>
+ 
+  <p>Initializes the xor filter, and runs the passed hash function on  
 each of the elements.  The hash function must output unsigned 64 bit  
 numbers, or an error will occur.  This could be 'safer' than passing raw  
 data, because of the minimal checks on the output of the function are done.</p>
@@ -188,9 +175,58 @@ using a list of tuples to transform:</p>
         Num1 + Num2
      end)).</pre>
  
-  <p>Otherwise, an <code>{error, "Reason"}</code> be returned.</p>
+  <p>Returns a {<code>Ref&lt;&gt;</code>, hash_method} to a filter to be used in <code>contain</code>
+  and <code>free</code>, if a predefined hash function is specified.</p>
+ 
+  <p>Returns a {<code>Ref&lt;&gt;</code>, hash_function()} if a custom function is passed.</p>
+ 
+  Otherwise, an <code>{error, reason}</code> be returned.</p>
+
+<h3 class="function"><a name="xor8_buffered-1">xor8_buffered/1</a></h3>
+<div class="spec">
+<p><tt>xor8_buffered(List::list()) -&gt; {reference(), atom()} | {error, atom()}</tt><br></p>
+</div><p>Similar to the initialize function, but is a buffered version for lists
+  that are large.  This version uses the default hash.</p>
+
+<h3 class="function"><a name="xor8_buffered-2">xor8_buffered/2</a></h3>
+<div class="spec">
+<p><tt>xor8_buffered(List::list(), HashFunction::atom() | function()) -&gt; {reference(), atom() | function()} | {error, atom()}</tt><br></p>
+</div><p><p>Similar to the initialize function, but is a buffered version for lists  
+that are over 100,000,000 keys.  Use for greater speed.</p>
+ 
+  <p>See xor8/1 for example usage.</p>
  
   Returns a <code>Ref&lt;&gt;</code> to a filter to be used in <code>contain</code> and <code>free</code>.</p>
+
+<h3 class="function"><a name="xor8_contain-2">xor8_contain/2</a></h3>
+<div class="spec">
+<p><tt>xor8_contain(X1::{reference(), atom() | function()}, Key::term()) -&gt; true | false</tt><br></p>
+</div><p><p>Tests to see if the passed argument is in the filter.  The first  
+argument must be the pre-initialized filter.</p>
+ 
+  <p>DO NOT PASS PRE-HASHED VALUES.  The method / fun passed to the  
+initialization function is saved, and is used to compute the hash.</p>
+ 
+  Returns true if the element exists (or if there is a false positive).
+  False if not.</p>
+
+<h3 class="function"><a name="xor8_contain-3">xor8_contain/3</a></h3>
+<div class="spec">
+<p><tt>xor8_contain(X1::{reference(), atom() | function()}, Key::term(), ReturnValue::any()) -&gt; true | any()</tt><br></p>
+</div><p><p>Tests to see if the passed argument is in the filter.  The first  
+argument must be the pre-initialized filter.</p>
+ 
+  Returns <code>true</code> if the element exists (or there is a false positive).
+  The third argument will be returned instead of <code>false</code> if the element is
+  not in the filter.</p>
+
+<h3 class="function"><a name="xor8_free-1">xor8_free/1</a></h3>
+<div class="spec">
+<p><tt>xor8_free(X1::{reference(), any()}) -&gt; ok</tt><br></p>
+</div><p><p>Frees the memory of the filter.  These can be large structures, so it  
+is recommended that this is called for cleanup.</p>
+ 
+  Returns <code>ok</code>.</p>
 <hr>
 
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>

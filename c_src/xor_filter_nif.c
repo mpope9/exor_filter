@@ -1,9 +1,14 @@
 #include <stdint.h>
+#include <string.h>
 #include "erl_nif.h"
 #include "xorfilter.h"
 
 static ErlNifResourceType* xor8_resource_type;
 static ErlNifResourceType* xor16_resource_type;
+
+static char* DEFAULT_HASH = "default_hash\0";
+static char* PASSED_HASH = "passed\0";
+static char* NONE_HASH = "none\0";
 
 typedef struct 
 {
@@ -25,14 +30,14 @@ void destroy_xor8_filter_resource(ErlNifEnv* env, void* obj)
 {
    xor8_filter_resource* resource = (xor8_filter_resource*) obj;
 
-   if(obj != NULL && resource->is_buffer_allocated) 
-   {
-      enif_free(resource->buffer);
-   }
    if(obj != NULL && resource->is_filter_allocated) 
    {
       xor8_free(resource->filter);
       enif_free(resource->filter);
+   }
+   if(obj != NULL && resource->is_buffer_allocated) 
+   {
+      enif_free(resource->buffer);
    }
 }
 
@@ -40,14 +45,14 @@ void destroy_xor16_filter_resource(ErlNifEnv* env, void* obj)
 {
    xor16_filter_resource* resource = (xor16_filter_resource*) obj;
 
-   if(obj != NULL && resource->is_buffer_allocated) 
-   {
-      enif_free(resource->buffer);
-   }
    if(obj != NULL && resource->is_filter_allocated) 
    {
       xor16_free(resource->filter);
       enif_free(resource->filter);
+   }
+   if(obj != NULL && resource->is_buffer_allocated) 
+   {
+      enif_free(resource->buffer);
    }
 }
 
@@ -94,17 +99,107 @@ mk_error(ErlNifEnv* env, const char* mesg)
    return enif_make_tuple2(env, mk_atom(env, "error"), mk_atom(env, mesg));
 }
 
+/**
+ * Fills a buffer through fetching raw uint64 values from the passed list.
+ * This is for the pre-hashed or custom hashed values.
+ *
+ * Only method that can atually return an error.
+ */
+static int
+fill_buffer_raw(uint64_t* buffer, ErlNifEnv* env, ERL_NIF_TERM list)
+{
+   ERL_NIF_TERM head;
+   uint64_t current = 0;
+   for(int i = 0; enif_get_list_cell(env, list, &head, (ERL_NIF_TERM*) &list); i++) 
+   {
+      if(!enif_get_uint64(env, head, &current)) 
+      {
+         return false;
+      }
+      buffer[i] = current;
+   }
+   return true;
+}
+
+/**
+ * Default hashing method.  Uses built in erlang phash2.
+ */
+static int fill_buffer_default(uint64_t* buffer, ErlNifEnv* env, ERL_NIF_TERM list)
+{
+   ERL_NIF_TERM head;
+   for(int i = 0; enif_get_list_cell(env, list, &head, (ERL_NIF_TERM*) &list); i++) 
+   {
+      buffer[i] = enif_hash(ERL_NIF_PHASH2, head, 0);
+   }
+   return true;
+}
+
+/**
+ * Fash hash.  
+ * 
+ * I wanna go FAST! -- Ricky Bobby
+ */
+static int fill_buffer_fast(uint64_t* buffer, ErlNifEnv* env, ERL_NIF_TERM list)
+{
+   ERL_NIF_TERM head;
+   for(int i = 0; enif_get_list_cell(env, list, &head, (ERL_NIF_TERM*) &list); i++) 
+   {
+      buffer[i] = enif_hash(ERL_NIF_INTERNAL_HASH, head, 0);
+   }
+   return true;
+}
+
+static int
+xor8_fill_buffer(xor8_filter_resource* filter, char* hash_function,
+   ErlNifEnv* env, ERL_NIF_TERM list) 
+{
+
+   if(strncmp(hash_function, PASSED_HASH, 7) == 0 || 
+      strncmp(hash_function, NONE_HASH, 5) == 0) {
+      return fill_buffer_raw(filter->buffer, env, list);
+   }
+   else if(strncmp(hash_function, DEFAULT_HASH, 12) == 0)
+   {
+      return fill_buffer_default(filter->buffer, env, list);
+   }
+   else
+   {
+      return fill_buffer_fast(filter->buffer, env, list);
+   }
+
+   return true;
+}
+
+static int
+xor16_fill_buffer(xor16_filter_resource* filter, char* hash_function,
+   ErlNifEnv* env, ERL_NIF_TERM list) 
+{
+
+   if(strncmp(hash_function, PASSED_HASH, 7) == 0 || 
+      strncmp(hash_function, NONE_HASH, 5) == 0) {
+      return fill_buffer_raw(filter->buffer, env, list);
+   }
+   else if(strncmp(hash_function, DEFAULT_HASH, 12) == 0)
+   {
+      return fill_buffer_default(filter->buffer, env, list);
+   }
+   else
+   {
+      return fill_buffer_fast(filter->buffer, env, list);
+   }
+
+   return true;
+}
 
 /* Begin xor8 nif code */
 static ERL_NIF_TERM
 xor8_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffered)
 {
-   ERL_NIF_TERM head;
    ERL_NIF_TERM is_list = argv[0];
    unsigned list_length;
    uint64_t* value_list;
 
-   if(argc != 1)
+   if(argc != 2)
    {
       return enif_make_badarg(env);
    }
@@ -119,6 +214,10 @@ xor8_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffere
       return mk_error(env, "get_list_length_error");
    }
 
+   // Get hash_function
+   char hash_function[24];
+   enif_get_atom(env, argv[1], hash_function, 24, ERL_NIF_LATIN1);
+
    xor8_filter_resource* filter_resource = 
       enif_alloc_resource(xor8_resource_type, sizeof(xor8_filter_resource));
    filter_resource->is_buffer_allocated = false;
@@ -131,33 +230,32 @@ xor8_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffere
       return mk_error(env, "could_not_allocate_memory_error");
    }
 
-   uint64_t current = 0;
-   for(int i = 0; enif_get_list_cell(env, argv[0], &head, (ERL_NIF_TERM*) &(argv[0])); i++) 
-   {
-      if(!enif_get_uint64(env, head, &current)) 
-      {
-         return mk_error(env, "convert_to_uint64_t_error");
-      }
-      value_list[i] = current;
-   }
-
    filter_resource->buffer = value_list;
    filter_resource->is_buffer_allocated = true;
-   
+
+   if(!(xor8_fill_buffer(filter_resource, hash_function, env, argv[0]))) {
+      enif_release_resource(filter_resource);
+      return mk_error(env, "convert_to_uint64_t_error");
+   }
+
+   // We don't populate the resource yet, because of the call to xor8_free, which
+   // would cause a segfault.  Need to manually free this memory.
    xor8_t* filter = enif_alloc(sizeof(xor8_t));
 
    if(!xor8_allocate(list_length, filter)) 
    {
+      enif_free(filter);
       enif_release_resource(filter);
       return mk_error(env, "xor8_allocate_error");
    }
 
-   /* Determine to use a buffered populate for speed or not */
+   // Determine to use a buffered populate for speed or not
    if(buffered) 
    {
       if(!xor8_populate(value_list, list_length, filter)) 
       {
-         enif_release_resource(filter);
+         enif_free(filter);
+         enif_release_resource(filter_resource);
          return mk_error(env, "xor8_populate_error");
       }
    }
@@ -165,8 +263,9 @@ xor8_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffere
    {
       if(!xor8_buffered_populate(value_list, list_length, filter)) 
       {
-         enif_release_resource(filter);
-         return mk_error(env, "xor8_populate_error");
+         enif_free(filter);
+         enif_release_resource(filter_resource);
+         return mk_error(env, "xor8_buffered_populate_error");
       }
    }
 
@@ -193,7 +292,7 @@ static ERL_NIF_TERM
 xor8_contain_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
 
-   if(argc != 2)
+   if(argc != 3)
    {
       return enif_make_badarg(env);
    }
@@ -205,10 +304,26 @@ xor8_contain_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
    }
    xor8_t* filter = filter_resource->filter;
 
+   char hash_function[24];
+   enif_get_atom(env, argv[1], hash_function, 24, ERL_NIF_LATIN1);
+
    ErlNifUInt64 key;
-   if(!enif_get_uint64(env, argv[1], &key)) 
+   // Hash the values or not.
+   if(strncmp(hash_function, PASSED_HASH, 7) == 0 || 
+      strncmp(hash_function, NONE_HASH, 5) == 0) {
+
+      if(!enif_get_uint64(env, argv[1], &key)) 
+      {
+         return mk_error(env, "get_key_for_contains_error");
+      }
+   }
+   else if(strncmp(hash_function, DEFAULT_HASH, 12) == 0)
    {
-      return mk_error(env, "get_key_for_contains_error");
+      key = enif_hash(ERL_NIF_PHASH2, argv[1], 0);
+   }
+   else
+   {
+      key = enif_hash(ERL_NIF_INTERNAL_HASH, argv[1], 0);
    }
 
    if(xor8_contain(key, filter)) 
@@ -247,12 +362,11 @@ xor8_free_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 static ERL_NIF_TERM
 xor16_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffered)
 {
-   ERL_NIF_TERM head;
    ERL_NIF_TERM is_list = argv[0];
    unsigned list_length;
    uint64_t* value_list;
 
-   if(argc != 1)
+   if(argc != 2)
    {
       return enif_make_badarg(env);
    }
@@ -267,6 +381,10 @@ xor16_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffer
       return mk_error(env, "get_list_length_error");
    }
 
+   // Get hash_function
+   char hash_function[24];
+   enif_get_atom(env, argv[1], hash_function, 24, ERL_NIF_LATIN1);
+
    xor16_filter_resource* filter_resource = 
       enif_alloc_resource(xor16_resource_type, sizeof(xor8_filter_resource));
    filter_resource->is_buffer_allocated = false;
@@ -279,33 +397,32 @@ xor16_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffer
       return mk_error(env, "could_not_allocate_memory_error");
    }
 
-   uint64_t current = 0;
-   for(int i = 0; enif_get_list_cell(env, argv[0], &head, (ERL_NIF_TERM*) &(argv[0])); i++) 
-   {
-      if(!enif_get_uint64(env, head, &current)) 
-      {
-         return mk_error(env, "convert_to_uint64_t_error");
-      }
-      value_list[i] = current;
-   }
-
    filter_resource->buffer = value_list;
    filter_resource->is_buffer_allocated = true;
-   
+
+   if(!(xor16_fill_buffer(filter_resource, hash_function, env, argv[0]))) {
+      enif_release_resource(filter_resource);
+      return mk_error(env, "convert_to_uint64_t_error");
+   }
+
+   // We don't populate the resource yet, because of the call to xor16_free, which
+   // would cause a segfault.  Need to manually free this memory.
    xor16_t* filter = enif_alloc(sizeof(xor8_t));
 
    if(!xor16_allocate(list_length, filter)) 
    {
+      enif_free(filter);
       enif_release_resource(filter);
       return mk_error(env, "xor16_allocate_error");
    }
 
-   /* Determine to use a buffered populate for speed or not */
+   // Determine to use a buffered populate for speed or not
    if(buffered) 
    {
       if(!xor16_populate(value_list, list_length, filter)) 
       {
-         enif_release_resource(filter);
+         enif_free(filter);
+         enif_release_resource(filter_resource);
          return mk_error(env, "xor16_populate_error");
       }
    }
@@ -313,8 +430,9 @@ xor16_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffer
    {
       if(!xor16_buffered_populate(value_list, list_length, filter)) 
       {
-         enif_release_resource(filter);
-         return mk_error(env, "xor16_populate_error");
+         enif_free(filter);
+         enif_release_resource(filter_resource);
+         return mk_error(env, "xor16_buffered_populate_error");
       }
    }
 
@@ -341,7 +459,7 @@ static ERL_NIF_TERM
 xor16_contain_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
 
-   if(argc != 2)
+   if(argc != 3)
    {
       return enif_make_badarg(env);
    }
@@ -353,10 +471,26 @@ xor16_contain_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
    }
    xor16_t* filter = filter_resource->filter;
 
+   char hash_function[24];
+   enif_get_atom(env, argv[1], hash_function, 24, ERL_NIF_LATIN1);
+
    ErlNifUInt64 key;
-   if(!enif_get_uint64(env, argv[1], &key)) 
+   // Hash the values or not.
+   if(strncmp(hash_function, PASSED_HASH, 7) == 0 || 
+      strncmp(hash_function, NONE_HASH, 5) == 0) {
+
+      if(!enif_get_uint64(env, argv[1], &key)) 
+      {
+         return mk_error(env, "get_key_for_contains_error");
+      }
+   }
+   else if(strncmp(hash_function, DEFAULT_HASH, 12) == 0)
    {
-      return mk_error(env, "get_key_for_contains_error");
+      key = enif_hash(ERL_NIF_PHASH2, argv[1], 0);
+   }
+   else
+   {
+      key = enif_hash(ERL_NIF_INTERNAL_HASH, argv[1], 0);
    }
 
    if(xor16_contain(key, filter)) 
@@ -400,14 +534,15 @@ nif_load(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
 }
 
 static ErlNifFunc nif_funcs[] = {
-   {"xor8_initialize", 1, xor8_initialize_nif},
-   {"xor8_buffered_initialize", 1, xor8_buffered_initialize_nif},
-   {"xor8_contain", 2, xor8_contain_nif},
-   {"xor8_free", 1, xor8_free_nif},
-   {"xor16_initialize", 1, xor16_initialize_nif},
-   {"xor16_buffered_initialize", 1, xor16_buffered_initialize_nif},
-   {"xor16_contain", 2, xor16_contain_nif},
-   {"xor16_free", 1, xor16_free_nif}
+   {"xor8_initialize_nif", 2, xor8_initialize_nif},
+   {"xor8_buffered_initialize_nif", 2, xor8_buffered_initialize_nif},
+   {"xor8_contain_nif", 3, xor8_contain_nif},
+   {"xor8_free_nif", 1, xor8_free_nif},
+   
+   {"xor16_initialize_nif", 2, xor16_initialize_nif},
+   {"xor16_buffered_initialize_nif", 2, xor16_buffered_initialize_nif},
+   {"xor16_contain_nif", 3, xor16_contain_nif},
+   {"xor16_free_nif", 1, xor16_free_nif}
 };
 
 ERL_NIF_INIT(exor_filter, nif_funcs, nif_load, NULL, NULL, NULL);

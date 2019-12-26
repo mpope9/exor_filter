@@ -27,6 +27,7 @@ basic_test_() ->
           ?_test(xor8_hash_does_not_return_uint64()),
           ?_test(xor8_hash_does_not_return_uint64_buffered()),
           ?_test(xor8_custom_contain_return()),
+          ?_test(xor8_contain_hash_function_custom_return()),
           ?_test(xor8_contain_key_not_uint64()),
           ?_test(xor8_contain_custom_key_not_uint64()),
           ?_test(xor8_valid_filter_in_contain()),
@@ -56,6 +57,7 @@ basic_test_() ->
           ?_test(xor16_hash_does_not_return_uint64()),
           ?_test(xor16_hash_does_not_return_uint64_buffered()),
           ?_test(xor16_custom_contain_return()),
+          ?_test(xor16_contain_hash_function_custom_return()),
           ?_test(xor16_contain_key_not_uint64()),
           ?_test(xor16_contain_custom_key_not_uint64()),
           ?_test(xor16_valid_filter_in_contain()),
@@ -150,6 +152,14 @@ xor8_custom_contain_return() ->
    Filter = exor_filter:xor8([1, 2, 3]),
    ?_assertMatch(true, exor_filter:xor8_contain(Filter, 2, asdf)),
    ?_assertMatch(asdf, exor_filter:xor8_contain(Filter, 6, asdf)),
+   exor_filter:xor8_free(Filter).
+
+xor8_contain_hash_function_custom_return() ->
+   Fun = fun(X) -> X + 1 end,
+   Filter = exor_filter:xor8([1, 2, 3], Fun),
+   ?_assertMatch(true, exor_filter:xor8_contain(Filter, 2)),
+   ?_assertMatch({error, reason}, 
+      exor_filter:xor8_contain(Filter, 1, {error, reason})),
    exor_filter:xor8_free(Filter).
 
 xor8_contain_key_not_uint64() ->
@@ -287,6 +297,14 @@ xor16_custom_contain_return() ->
    Filter = exor_filter:xor16([1, 2, 3]),
    ?_assertMatch(true, exor_filter:xor16_contain(Filter, 2, asdf)),
    ?_assertMatch(asdf, exor_filter:xor16_contain(Filter, 6, asdf)),
+   exor_filter:xor16_free(Filter).
+
+xor16_contain_hash_function_custom_return() ->
+   Fun = fun(X) -> X + 1 end,
+   Filter = exor_filter:xor16([1, 2, 3], Fun),
+   ?_assertMatch(true, exor_filter:xor16_contain(Filter, 2)),
+   ?_assertMatch({error, reason}, 
+      exor_filter:xor16_contain(Filter, 1, {error, reason})),
    exor_filter:xor16_free(Filter).
 
 xor16_contain_key_not_uint64() ->

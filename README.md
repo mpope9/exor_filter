@@ -12,9 +12,9 @@ This library uses dirty nifs for initializing filters over 10K elements!  Make s
 ## Example Usage
 Basic usage with default hashing is as follows:
 ```erlang
-Filter = exor_filter:xor8(["test1", "test2", "test3"]),
-true   = exor_filter:xor8_contain(Filter, "test1"),
-false  = exor_filter:xor8_contain(Filter, "test6"),
+Filter = exor_filter:xor8(["cat", "dog", "mouse"]),
+true   = exor_filter:xor8_contain(Filter, "cat"),
+false  = exor_filter:xor8_contain(Filter, "goose"),
 ok     = exor_filter:xor8_free(Filter).
 ```
 

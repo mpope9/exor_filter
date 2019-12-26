@@ -36,6 +36,7 @@ Do not modify the return value of the `exor_filter:xor8/1` or `/2` functions.  T
 
 ## Hashing
 The function `exor_filter:xor8/1` uses the default hash algorithm.  To specify the hashing algorithm to use, use the `exor_filter:xor8/2` function.  The filter initialization functions return values contain the context of hashing, so there is no need to specify it in the `exor_filter:xor8_contain/2` function.  **Do not pre-hash the value** being passed to `exor_filter:xor8_contain/2` or `/3`.  **Pass the raw value!**
+*  (Unless you're using pre-hashed data.  See below).  
 ### Example
 ```erlang
 Filter = exor_filter:xor8(["test1", "test2", "test3"], :fast_hash),
@@ -55,9 +56,8 @@ ok     = exor_filter:xor8_free(Filter).
     * This uses 64 bits, and is not consistent across nodes.  
     * The consequence is that false positives may be inconsistent across nodes.
     * It isn't recommended to use this method if there are more than 30K items in the filter.
-* To pass pre-hashed data, use the hash option `:none`.
 
-#### Pre-hashing
+#### Pre-Hashing and Custom Hashing
 *  There is an option to pass a hash function during intialization.  
 *  It must return a unsigned 64 bit number and have an airty of `/1`.  
 *  Due to the Erlang nif api lacking the functionality to pass and call a function in a nif, this method creates a second list of equal length.  Be weary of that.
@@ -68,11 +68,13 @@ ok     = exor_filter:xor8_free(Filter).
     * Make your unit testing reflect reality, if possible.  This will catch the issue early.
 ```erlang
 Fun    = fun(X) -> X + 1 end,
-Filter = exor_filter:xor8_initialize([1, 2, 3], Fun),
+Filter = exor_filter:xor8([1, 2, 3], Fun),
 true   = exor_filter:xor8_contain(Filter, 4, Fun),
 false  = exor_filter:xor8_contain(Filter, 1, Fun),
 ok     = exor_filter:xor8_free(Filter).
 ```
+
+* To pass pre-hashed data, use the hash option `:none`.  The `exor_filter:contain/2` and `/3` functions must be passed pre-hashed data in this case.
 
 ## Elixir Example
 ```elixir
@@ -89,7 +91,7 @@ true =
 ## Custom Return Values
 `contain/3` can return a custom value instead of `false` if the value isn't present in the filter:
 ```erlang
-Filter1            = exor_filter:xor8_initialize([1, 2, 3]),
+Filter1            = exor_filter:xor8([1, 2, 3]),
 true               = exor_filter:xor8_contain(Filter1, 2, {error, not_found}),
 {error, not_found} = exor_filter:xor8_contain(Filter1, 6, {error, not_found}),
 ok                 = exor_filter:xor8_free(Filter1).
@@ -98,7 +100,7 @@ ok                 = exor_filter:xor8_free(Filter1).
 ## xor16 and Other Information
 The usage of the xor16 is the same.  That structure is larger, but has a smaller false positive rate.  Just sub `xor8` for `xor16` in all of the examples.
 
-The buffered versions of initialize are provided for larger data sets.  This can be faster.  See `xor8_buffered_initialize/2` for more information.
+The buffered versions of initialize are provided for larger data sets.  This can be faster.  See `xor8_buffered/2` for more information.
 
 Build
 -----

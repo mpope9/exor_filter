@@ -7,6 +7,8 @@ They're 'Faster and Smaller Than Bloom and Cuckoo Filters'.
 
 Be wary of memory usage when using this module.
 
+This library uses dirty nifs for initializing filters over 10K elements!  Make sure your environment is setup correctly.  Filters of 10M elements can be initialized within 3 seconds.
+
 ## Example Usage
 Basic usage with default hashing is as follows:
 ```erlang
@@ -46,13 +48,24 @@ ok     = exor_filter:xor8_free(Filter).
 * The default hash function used is [`erlang:phash/1`](http://erlang.org/doc/man/erlang.html#phash2-1)
     * It can be specified with the `:default_hash` as the second argument to `exor_filter:xor8/2`.
     * It uses 60 bits on a 64-bit system and is consistent across nodes.
-    * The default hashing function should be fine for most use cases, but if the filter has millions of elements, consider using a different method.
+    * Do not use the default hash if your list exceeds 20K strings, there will be duplicates and the initialization will spin forever.
+        * This is a known bug that is being worked on.
+    * The default hashing function should be fine for most use cases, but if the filter has over 20K elements, create your own hashing function.
 *  An option for a faster hashing function is available, using the option `:fash_hash`.  
-    * This uses 64 bits, and is non consistent across nodes.  
+    * This uses 64 bits, and is not consistent across nodes.  
     * The consequence is that false positives may be inconsistent across nodes.
+    * It isn't recommended to use this method if there are more than 30K items in the filter.
 * To pass pre-hashed data, use the hash option `:none`.
 
-There is an option to pass a hash function during intialization.  It must return a unsigned 64 bit number and have an airty of `/1`.  Due to the Erlang nif api lacking the functionality to pass and call a function in a nif.  This method creates a second list of equal length.  Be weary of that.
+#### Pre-hashing
+*  There is an option to pass a hash function during intialization.  
+*  It must return a unsigned 64 bit number and have an airty of `/1`.  
+*  Due to the Erlang nif api lacking the functionality to pass and call a function in a nif, this method creates a second list of equal length.  Be weary of that.
+*  The has function **must** return unique keys, or else initialization will never return.  
+    * This is a known implementation bug and will be addressed in the future.  
+    * If your set is known to have a large amount of elements, consider pre-hashing and checking for dups before initing.
+    * Or consider wrapping initialization in a timed gen-server call.
+    * Make your unit testing reflect reality, if possible.  This will catch the issue early.
 ```erlang
 Fun    = fun(X) -> X + 1 end,
 Filter = exor_filter:xor8_initialize([1, 2, 3], Fun),

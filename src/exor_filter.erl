@@ -82,7 +82,7 @@
 %%
 %% Returns a {`Ref<>', `default_hash'} to be later used, or an error.
 %% @end
--spec xor8(list()) -> {reference(), default_hash} | {error, atom()}.
+-spec xor8(list()) -> {reference(), atom()} | {error, atom()}.
 
 xor8(List) ->
    xor8(List, default_hash).
@@ -128,7 +128,7 @@ xor8(List, HashFunction) when
    HashFunction == fast_hash;
    HashFunction == none ->
 
-   case xor8_initialize_nif(List, HashFunction) of
+   case xor8_initialize(List, HashFunction) of
       
       {error, Reason} ->
          {error, Reason};
@@ -149,7 +149,7 @@ xor8(List, HashFunction) when is_function(HashFunction) ->
             end,
          List),
          
-         case xor8_initialize_nif(HashedList, passed) of
+         case xor8_initialize(HashedList, passed) of
             
             {error, Reason} ->
                {error, Reason};
@@ -167,6 +167,19 @@ xor8(_, _) ->
 
 
 %%-----------------------------------------------------------------------------
+%% @doc Internal function that determines if the nif should be dirty scheduled 
+%% or not, if above 10K
+%% records.
+%% @end
+%%-----------------------------------------------------------------------------
+xor8_initialize(List, HashFunction) when length(List) >= 10000 ->
+   xor8_initialize_nif_dirty(List, HashFunction);
+
+xor8_initialize(List, HashFunction) ->
+   xor8_initialize_nif(List, HashFunction).
+
+
+%%-----------------------------------------------------------------------------
 %% @doc Nif api.  Initializes the xor filter on a passed list.  
 %% If the list isn't a list of 64 unsigned numbers, an error will be thrown.
 %% 
@@ -176,6 +189,21 @@ xor8(_, _) ->
 -spec xor8_initialize_nif(list(), atom()) -> reference() | {error, atom()}.
 
 xor8_initialize_nif(_, _) ->
+   not_loaded(?LINE).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Nif api.  Initializes the xor filter on a passed list, with a dirty
+%% scheduler.
+%% If the list isn't a list of 64 unsigned numbers, an error will be thrown.
+%% 
+%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor8_initialize_nif_dirty(list(), atom()) 
+   -> reference() | {error, atom()}.
+
+xor8_initialize_nif_dirty(_, _) ->
    not_loaded(?LINE).
 
 
@@ -207,7 +235,7 @@ xor8_buffered(List, HashFunction) when
    HashFunction == fast_hash;
    HashFunction == none ->
 
-   case xor8_buffered_initialize_nif(List, HashFunction) of
+   case xor8_buffered_initialize(List, HashFunction) of
       
       {error, Reason} ->
          {error, Reason};
@@ -227,7 +255,7 @@ xor8_buffered(List, HashFunction) when is_function(HashFunction) ->
                HashFunction(Element)
             end,
          List),
-         case xor8_buffered_initialize_nif(HashedList, passed) of
+         case xor8_buffered_initialize(HashedList, passed) of
 
             {error, Reason} ->
                {error, Reason};
@@ -242,6 +270,19 @@ xor8_buffered(List, HashFunction) when is_function(HashFunction) ->
 
 
 %%-----------------------------------------------------------------------------
+%% @doc Internal function that determines if the nif should be dirty scheduled
+%% or not, if above 10K.
+%% records.
+%% @end
+%%-----------------------------------------------------------------------------
+xor8_buffered_initialize(List, HashFunction) when length(List) >= 10000 ->
+   xor8_buffered_initialize_nif_dirty(List, HashFunction);
+
+xor8_buffered_initialize(List, HashFunction) ->
+   xor8_buffered_initialize_nif(List, HashFunction).
+
+
+%%-----------------------------------------------------------------------------
 %% @doc Nif api.  Similar to the initialize function, but is a buffered 
 %% version for lists
 %%
@@ -252,6 +293,20 @@ xor8_buffered(List, HashFunction) when is_function(HashFunction) ->
    -> reference() | {error, atom()}.
 
 xor8_buffered_initialize_nif(_, _) ->
+   not_loaded(?LINE).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Nif api.  Similar to the initialize function, but is a buffered, dirty
+%% version for large lists.
+%%
+%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor8_buffered_initialize_nif_dirty(list(), atom()) 
+   -> reference() | {error, atom()}.
+
+xor8_buffered_initialize_nif_dirty(_, _) ->
    not_loaded(?LINE).
 
 
@@ -372,7 +427,7 @@ xor16(List, HashFunction) when
    HashFunction == fast_hash;
    HashFunction == none ->
 
-   case xor16_initialize_nif(List, HashFunction) of
+   case xor16_initialize(List, HashFunction) of
       
       {error, Reason} ->
          {error, Reason};
@@ -393,7 +448,7 @@ xor16(List, HashFunction) when is_function(HashFunction) ->
             end,
          List),
          
-         case xor16_initialize_nif(HashedList, passed) of
+         case xor16_initialize(HashedList, passed) of
             
             {error, Reason} ->
                {error, Reason};
@@ -411,6 +466,19 @@ xor16(_, _) ->
 
 
 %%-----------------------------------------------------------------------------
+%% @doc Internal function that determines if the nif should be dirty scheduled 
+%% or not, if above 10K
+%% records.
+%% @end
+%%-----------------------------------------------------------------------------
+xor16_initialize(List, HashFunction) when length(List) >= 10000 ->
+   xor16_initialize_nif_dirty(List, HashFunction);
+
+xor16_initialize(List, HashFunction) ->
+   xor16_initialize_nif(List, HashFunction).
+
+
+%%-----------------------------------------------------------------------------
 %% @doc Nif api.  Initializes the xor filter on a passed list.  
 %% If the list isn't a list of 64 unsigned numbers, an error will be thrown.
 %% 
@@ -420,6 +488,20 @@ xor16(_, _) ->
 -spec xor16_initialize_nif(list(), atom()) -> reference() | {error, atom()}.
 
 xor16_initialize_nif(_, _) ->
+   not_loaded(?LINE).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Nif api.  Initializes the xor filter on a passed list, dirty version.
+%% If the list isn't a list of 64 unsigned numbers, an error will be thrown.
+%% 
+%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor16_initialize_nif_dirty(list(), atom()) 
+   -> reference() | {error, atom()}.
+
+xor16_initialize_nif_dirty(_, _) ->
    not_loaded(?LINE).
 
 
@@ -451,7 +533,7 @@ xor16_buffered(List, HashFunction) when
    HashFunction == fast_hash;
    HashFunction == none ->
 
-   case xor16_buffered_initialize_nif(List, HashFunction) of
+   case xor16_buffered_initialize(List, HashFunction) of
       
       {error, Reason} ->
          {error, Reason};
@@ -471,7 +553,7 @@ xor16_buffered(List, HashFunction) when is_function(HashFunction) ->
                HashFunction(Element)
             end,
          List),
-         case xor16_buffered_initialize_nif(HashedList, passed) of
+         case xor16_buffered_initialize(HashedList, passed) of
 
             {error, Reason} ->
                {error, Reason};
@@ -486,6 +568,19 @@ xor16_buffered(List, HashFunction) when is_function(HashFunction) ->
 
 
 %%-----------------------------------------------------------------------------
+%% @doc Internal function that determines if the nif should be dirty scheduled 
+%% or not, if above 10K
+%% records.
+%% @end
+%%-----------------------------------------------------------------------------
+xor16_buffered_initialize(List, HashFunction) when length(List) >= 10000 ->
+   xor16_buffered_initialize_nif_dirty(List, HashFunction);
+
+xor16_buffered_initialize(List, HashFunction) ->
+   xor16_buffered_initialize_nif(List, HashFunction).
+
+
+%%-----------------------------------------------------------------------------
 %% @doc Nif api.  Similar to the initialize function, but is a buffered 
 %% version for lists
 %%
@@ -496,6 +591,20 @@ xor16_buffered(List, HashFunction) when is_function(HashFunction) ->
    -> reference() | {error, atom()}.
 
 xor16_buffered_initialize_nif(_, _) ->
+   not_loaded(?LINE).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Nif api.  Similar to the initialize function, but is a buffered , dirty
+%% version for lists
+%%
+%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor16_buffered_initialize_nif_dirty(list(), atom()) 
+   -> reference() | {error, atom()}.
+
+xor16_buffered_initialize_nif_dirty(_, _) ->
    not_loaded(?LINE).
 
 

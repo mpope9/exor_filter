@@ -3,6 +3,12 @@
 -include_lib("eunit/include/eunit.hrl").
 
 basic_test_() ->
+
+   %% Expensive pre-computation.
+   Ints = lists:seq(1, 20000),
+   MappingFun = fun(X) -> "test" ++ integer_to_list(X) end,
+   Strings = lists:map(MappingFun, Ints),
+
    [
       {
          "xor8 Test Group",
@@ -26,7 +32,12 @@ basic_test_() ->
           ?_test(xor8_valid_filter_in_contain()),
           ?_test(xor8_valid_filter_in_free()),
           ?_test(xor8_cannot_free_twice()),
-          ?_test(xor8_large())]
+          ?_test(xor8_large()),
+          ?_test(xor8_large_buffered()),
+          ?_test(xor8_medium_fast(Strings)),
+          ?_test(xor8_medium_fast_buffered(Strings)),
+          ?_test(xor8_medium_default(Strings)),
+          ?_test(xor8_medium_default_buffered(Strings))]
       },
       {
          "xor16 Test Group",
@@ -50,7 +61,12 @@ basic_test_() ->
           ?_test(xor16_valid_filter_in_contain()),
           ?_test(xor16_valid_filter_in_free()),
           ?_test(xor16_cannot_free_twice()),
-          ?_test(xor16_large())]
+          ?_test(xor16_large()),
+          ?_test(xor16_large_buffered()),
+          ?_test(xor16_medium_fast(Strings)),
+          ?_test(xor16_medium_fast_buffered(Strings)),
+          ?_test(xor16_medium_default(Strings)),
+          ?_test(xor16_medium_default_buffered(Strings))]
       }
    ].
 
@@ -162,8 +178,34 @@ xor8_cannot_free_twice() ->
 
 xor8_large() ->
    X = lists:seq(1, 10000000),
+   Filter = exor_filter:xor8(X, none),
+   ?_assertMatch(true, exor_filter:xor8_contain(Filter, 100)),
+   exor_filter:xor8_free(Filter).
+
+xor8_large_buffered() ->
+   X = lists:seq(1, 10000000),
    Filter = exor_filter:xor8_buffered(X, none),
    ?_assertMatch(true, exor_filter:xor8_contain(Filter, 100)),
+   exor_filter:xor8_free(Filter).
+
+xor8_medium_fast(Strings) ->
+   Filter = exor_filter:xor8(Strings, fast_hash),
+   ?_assertMatch(true, exor_filter:xor8_contain(Filter, "test100")),
+   exor_filter:xor8_free(Filter).
+
+xor8_medium_fast_buffered(Strings) ->
+   Filter = exor_filter:xor8_buffered(Strings, fast_hash),
+   ?_assertMatch(true, exor_filter:xor8_contain(Filter, "test100")),
+   exor_filter:xor8_free(Filter).
+
+xor8_medium_default(Strings) ->
+   Filter = exor_filter:xor8(Strings),
+   ?_assertMatch(true, exor_filter:xor8_contain(Filter, "test100")),
+   exor_filter:xor8_free(Filter).
+
+xor8_medium_default_buffered(Strings) ->
+   Filter = exor_filter:xor8_buffered(Strings),
+   ?_assertMatch(true, exor_filter:xor8_contain(Filter, "test100")),
    exor_filter:xor8_free(Filter).
 
 %% Begin xor16 tests.
@@ -273,8 +315,35 @@ xor16_cannot_free_twice() ->
 
 xor16_large() ->
    X = lists:seq(1, 10000000),
+   Filter = exor_filter:xor16(X, none),
+   ?_assertMatch(true, exor_filter:xor16_contain(Filter, 100)),
+   exor_filter:xor16_free(Filter).
+
+xor16_large_buffered() ->
+   X = lists:seq(1, 10000000),
    Filter = exor_filter:xor16_buffered(X, none),
    ?_assertMatch(true, exor_filter:xor16_contain(Filter, 100)),
    exor_filter:xor16_free(Filter).
+
+xor16_medium_fast(Strings) ->
+   Filter = exor_filter:xor16(Strings, fast_hash),
+   ?_assertMatch(true, exor_filter:xor16_contain(Filter, "test100")),
+   exor_filter:xor16_free(Filter).
+
+xor16_medium_fast_buffered(Strings) ->
+   Filter = exor_filter:xor16_buffered(Strings, fast_hash),
+   ?_assertMatch(true, exor_filter:xor16_contain(Filter, "test100")),
+   exor_filter:xor16_free(Filter).
+
+xor16_medium_default(Strings) ->
+   Filter = exor_filter:xor16(Strings),
+   ?_assertMatch(true, exor_filter:xor16_contain(Filter, "test100")),
+   exor_filter:xor16_free(Filter).
+
+xor16_medium_default_buffered(Strings) ->
+   Filter = exor_filter:xor16_buffered(Strings),
+   ?_assertMatch(true, exor_filter:xor16_contain(Filter, "test100")),
+   exor_filter:xor16_free(Filter).
+
 
 %% EOF

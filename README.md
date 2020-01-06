@@ -45,9 +45,9 @@ Do not modify the return value of the `xor8:new/1` or `/2` functions.  The other
 * The default hashing mechanisms remove duplicate keys.  Pre-hashed data will need to be checked by the user.  An error will be returned if duplicate keys are detected.
 ### Example
 ```erlang
-Filter = xor8:new(["test1", "test2", "test3"], fast_hash),
-true   = xor8:contain(Filter, "test1"),
-false  = xor8:contain(Filter, "test6"),
+Filter = xor8:new([1, 2, 3], none),
+true   = xor8:contain(Filter, 1),
+false  = xor8:contain(Filter, 6),
 ok     = xor8:free(Filter).
 ```
 
@@ -56,15 +56,11 @@ ok     = xor8:free(Filter).
     * It can be specified with the `default_hash` as the second argument to `xor8:new/2`.
     * It uses 60 bits on a 64-bit system and is consistent across nodes.
     * The default hashing function should be fine for most use cases, but if the filter has over 20K elements, create your own hashing function, as hashing collisions will become more frequent.
-        * Errors won't happen.
-*  An option for a faster hashing function is available, using the option `fash_hash`.
-    * This uses 64 bits, and is not consistent across nodes.
-    * The consequence is that false positives may be inconsistent across nodes.
-    * It isn't recommended to use this method if there are more than 30K items in the filter.
+        * Errors won't happen if a collision occurs.
 
 #### Pre-Hashing and Custom Hashing
 *  There is an option to pass a hash function during intialization.
-*  It must return a unsigned 64 bit number and have an airty of `/1`.  
+*  It must return a unsigned 64 bit number and have an airty of `/1`.
 *  Due to the Erlang nif api lacking the functionality to pass and call a function in a nif, this method creates a second list of equal length.  Be weary of that.
 *  The custom hashing function **must** return unique keys.
     * An error will be returned otherwise.
@@ -77,7 +73,7 @@ false  = xor8:contain(Filter, 1),
 ok     = xor8:free(Filter).
 ```
 
-* To pass pre-hashed data, use the hash option `:none`.  The `xor8:contain/2` and `/3` functions must be passed pre-hashed data in this case.
+* To pass pre-hashed data, use the hash option `none`.  The `xor8:contain/2` and `/3` functions must be passed pre-hashed data in this case.
     * This too will check for duplicate hashed values, and will return an error if it is detected.
 
 ## Elixir Example

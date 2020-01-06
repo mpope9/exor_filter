@@ -1,5 +1,6 @@
 %%-----------------------------------------------------------------------------
 %% @copyright (C) 2019, Matthew Pope
+%% @author Matthew Pope
 %% @doc Nif wrapper for the xor_filter: 
 %% https://github.com/FastFilter/xor_singleheader
 %%
@@ -48,7 +49,7 @@
 %% The buffered versions of initialize are provided for larger data sets.
 %% This can be faster.  See xor8_buffered/1 for more information.
 %%
-%% @author Matthew Pope
+%% Convinience modules `xor8` and `xor16` are provided.
 %% @end
 %%-----------------------------------------------------------------------------
 -module(exor_filter).
@@ -68,7 +69,10 @@
    xor16_buffered/2,
    xor16_contain/2,
    xor16_contain/3,
-   xor16_free/1
+   xor16_free/1,
+
+   %% Unsafe API.  Use with caution.
+   nif_wrapper/3
 ]).
 -on_load(init/0).
 
@@ -92,9 +96,8 @@ xor8(List) ->
 %% @doc Initializes the xor filter, and runs the specified pre-defined 
 %% hash function on each of the elements.  
 %%
-%% There are predefined hashing function provided, can can be specified by
-%% using `default_hash' or `fast_hash'.  To pass pre-hashed data, use
-%% `none'.
+%% There is a predefined hashing function provided, can can be specified by
+%% using `default_hash' To pass pre-hashed data, use `none'.
 %%
 %% OR
 %%
@@ -121,90 +124,11 @@ xor8(List) ->
 %% Otherwise, an `{error, reason}' be returned.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor8(list(), atom() | fun()) -> {reference(), atom() | fun()} | {error, atom()}.
+-spec xor8(list(), atom() | fun()) -> 
+   {reference(), atom() | fun()} | {error, atom()}.
 
-xor8(List, HashFunction) when 
-   HashFunction == default_hash;
-   HashFunction == fast_hash;
-   HashFunction == none ->
-
-   case xor8_initialize(List, HashFunction) of
-      
-      {error, Reason} ->
-         {error, Reason};
-
-      Reference ->
-         {Reference, HashFunction}
-   end;
-
-xor8(List, HashFunction) when is_function(HashFunction) ->
-
-   case erlang:fun_info(HashFunction, arity) of
-
-      {arity, 1} ->
-
-         HashedList = lists:map(
-            fun(Element) ->
-               HashFunction(Element)
-            end,
-         List),
-         
-         case xor8_initialize(HashedList, passed) of
-            
-            {error, Reason} ->
-               {error, Reason};
-
-            Reference ->
-               {Reference, HashFunction}
-         end;
-
-      _ ->
-         {error, wrong_arity_hash_function_error}
-   end;
-
-xor8(_, _) ->
-   {error, invalid_hash_method}.
-
-
-%%-----------------------------------------------------------------------------
-%% @doc Internal function that determines if the nif should be dirty scheduled 
-%% or not, if above 10K
-%% records.
-%% @end
-%%-----------------------------------------------------------------------------
-xor8_initialize(List, HashFunction) when length(List) >= 10000 ->
-   xor8_initialize_nif_dirty(List, HashFunction);
-
-xor8_initialize(List, HashFunction) ->
-   xor8_initialize_nif(List, HashFunction).
-
-
-%%-----------------------------------------------------------------------------
-%% @doc Nif api.  Initializes the xor filter on a passed list.  
-%% If the list isn't a list of 64 unsigned numbers, an error will be thrown.
-%% 
-%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
-%% @end
-%%-----------------------------------------------------------------------------
--spec xor8_initialize_nif(list(), atom()) -> reference() | {error, atom()}.
-
-xor8_initialize_nif(_, _) ->
-   not_loaded(?LINE).
-
-
-%%-----------------------------------------------------------------------------
-%% @doc Nif api.  Initializes the xor filter on a passed list, with a dirty
-%% scheduler.
-%% If the list isn't a list of 64 unsigned numbers, an error will be thrown.
-%% 
-%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
-%% @end
-%%-----------------------------------------------------------------------------
--spec xor8_initialize_nif_dirty(list(), atom()) 
-   -> reference() | {error, atom()}.
-
-xor8_initialize_nif_dirty(_, _) ->
-   not_loaded(?LINE).
+xor8(List, HashFunction) ->
+   initialize_filter(List, HashFunction, xor8).
 
 
 %%-----------------------------------------------------------------------------
@@ -230,56 +154,195 @@ xor8_buffered(List) ->
 -spec xor8_buffered(list(), atom() | fun()) 
    -> {reference(), atom() | fun()} | {error, atom()}.
 
-xor8_buffered(List, HashFunction) when 
-   HashFunction == default_hash;
-   HashFunction == fast_hash;
-   HashFunction == none ->
+xor8_buffered(List, HashFunction) ->
+   initialize_filter(List, HashFunction, xor8_buffered).
 
-   case xor8_buffered_initialize(List, HashFunction) of
+
+%%-----------------------------------------------------------------------------
+%% @doc See the xor8/2 documentation.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor16(list()) -> {reference(), default_hash} | {error, atom()}.
+
+xor16(List) ->
+   xor16(List, default_hash).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Initializes the xor filter, and runs the specified pre-defined 
+%% hash function on each of the elements.  
+%%
+%% See the xor8/2 documentation.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor16(list(), atom() | fun()) 
+   -> {reference(), atom() | fun()} | {error, atom()}.
+
+xor16(List, HashFunction) ->
+   initialize_filter(List, HashFunction, xor16).
+ 
+
+%%-----------------------------------------------------------------------------
+%% @doc Similar to the initialize function, but is a buffered version for lists
+%% that are large.  This version uses the default hash.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor16_buffered(list()) -> {reference(), atom()} | {error, atom()}.
+
+xor16_buffered(List) ->
+   xor16_buffered(List, default_hash).
+ 
+
+%%-----------------------------------------------------------------------------
+%% @doc Similar to the initialize function, but is a buffered version for lists
+%% that are over 100,000,000 keys.  Use for greater speed.
+%%
+%% See xor16/1 for example usage.
+%% 
+%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor16_buffered(list(), atom() | fun()) 
+   -> {reference(), atom() | fun()} | {error, atom()}.
+
+xor16_buffered(List, HashFunction) ->
+   initialize_filter(List, HashFunction, xor16_buffered).
+ 
+%%-----------------------------------------------------------------------------
+%% @doc Function that does the actual work.  Does some error checking,
+%% as well as checks the passed lists for dups, and does hashing.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec initialize_filter(list(), atom(), atom()) 
+   -> {reference(), atom()} | {error, atom()}.
+
+initialize_filter(PassedList, default_hash, FilterType) ->
+
+   DupedList = 
+      lists:foldr(
+         fun(X, Acc) -> 
+            [erlang:phash2(X)] ++ Acc
+         end, [], PassedList),
+
+   List = lists:usort(DupedList),
+   nif_wrapper(List, default_hash, FilterType);
+
+initialize_filter(List, none, FilterType) ->
+
+   DeDupedList = lists:usort(List),
+   case length(List) == length(DeDupedList) of
+       
+      true ->
+         nif_wrapper(List, none, FilterType);
+
+      _ ->
+         {error, duplicates_in_hash_error}
+   end;
+
+initialize_filter(PassedList, HashFunction, FilterType) 
+   when is_function(HashFunction) ->
+
+   DupedList = 
+      lists:foldr(
+         fun(X, Acc) -> 
+            [erlang:phash2(X)] ++ Acc
+         end, [], PassedList),
+
+   List = lists:usort(DupedList),
+
+   EqualLength = length(List) == length(PassedList),
+   case {erlang:fun_info(HashFunction, arity), EqualLength} of
+
+      {{arity, 1}, true} ->
+         nif_wrapper(List, HashFunction, FilterType);
+
+      {_, false} ->
+         {error, duplicates_in_hash_error};
+
+      _ ->
+         {error, wrong_arity_hash_function_error}
+   end;
+
+initialize_filter(_, _, _) ->
+   {error, invalid_hash_method}.
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Unsafe API that is a wrapper for nif errors and bypassing duplication
+%% checking.  Use with caution.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec nif_wrapper(list(), atom() | fun(), atom()) 
+   -> {error, atom()} | {reference(), atom()} | {reference(), fun()}.
+nif_wrapper(List, HashFunction, FilterType) ->
+
+   case filter_selector(List, FilterType) of
       
       {error, Reason} ->
          {error, Reason};
 
       Reference ->
          {Reference, HashFunction}
-   end;
-
-xor8_buffered(List, HashFunction) when is_function(HashFunction) ->
-
-   case erlang:fun_info(HashFunction, arity) of
-
-      {arity, 1} ->
-
-         HashedList = lists:map(
-            fun(Element) ->
-               HashFunction(Element)
-            end,
-         List),
-         case xor8_buffered_initialize(HashedList, passed) of
-
-            {error, Reason} ->
-               {error, Reason};
-
-            Reference ->
-               {Reference, HashFunction}
-         end;
-
-      _ ->
-         {error, wrong_arity_hash_function_error}
    end.
 
 
 %%-----------------------------------------------------------------------------
-%% @doc Internal function that determines if the nif should be dirty scheduled
-%% or not, if above 10K.
-%% records.
+%% @doc Internal function that determines if the nif should be dirty scheduled 
+%% or not, if above 10K records.  Also chooses what filter should be init'd.
 %% @end
 %%-----------------------------------------------------------------------------
-xor8_buffered_initialize(List, HashFunction) when length(List) >= 10000 ->
-   xor8_buffered_initialize_nif_dirty(List, HashFunction);
+-spec filter_selector(list(), atom()) -> reference() | {error, atom()}.
 
-xor8_buffered_initialize(List, HashFunction) ->
-   xor8_buffered_initialize_nif(List, HashFunction).
+filter_selector(List, xor8) when length(List) >= 10000 ->
+   xor8_initialize_nif_dirty(List);
+
+filter_selector(List, xor8) ->
+   xor8_initialize_nif(List);
+
+filter_selector(List, xor8_buffered) when length(List) >= 10000 ->
+   xor8_buffered_initialize_nif_dirty(List);
+
+filter_selector(List, xor8_buffered) ->
+   xor8_buffered_initialize_nif(List);
+
+filter_selector(List, xor16) when length(List) >= 10000 ->
+   xor16_initialize_nif_dirty(List);
+
+filter_selector(List, xor16) ->
+   xor16_initialize_nif(List);
+
+filter_selector(List, xor16_buffered) when length(List) >= 10000 ->
+   xor16_buffered_initialize_nif_dirty(List);
+
+filter_selector(List, xor16_buffered) ->
+   xor16_buffered_initialize_nif(List).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Nif api.  Initializes the xor filter on a passed list.  
+%% If the list isn't a list of 64 unsigned numbers, an error will be thrown.
+%% 
+%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor8_initialize_nif(list()) -> reference() | {error, atom()}.
+
+xor8_initialize_nif(_) ->
+   not_loaded(?LINE).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Nif api.  Initializes the xor filter on a passed list, with a dirty
+%% scheduler.
+%% If the list isn't a list of 64 unsigned numbers, an error will be thrown.
+%% 
+%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor8_initialize_nif_dirty(list()) -> reference() | {error, atom()}.
+
+xor8_initialize_nif_dirty(_) ->
+   not_loaded(?LINE).
 
 
 %%-----------------------------------------------------------------------------
@@ -289,10 +352,9 @@ xor8_buffered_initialize(List, HashFunction) ->
 %% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor8_buffered_initialize_nif(list(), atom()) 
-   -> reference() | {error, atom()}.
+-spec xor8_buffered_initialize_nif(list()) -> reference() | {error, atom()}.
 
-xor8_buffered_initialize_nif(_, _) ->
+xor8_buffered_initialize_nif(_) ->
    not_loaded(?LINE).
 
 
@@ -303,10 +365,9 @@ xor8_buffered_initialize_nif(_, _) ->
 %% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor8_buffered_initialize_nif_dirty(list(), atom()) 
-   -> reference() | {error, atom()}.
+-spec xor8_buffered_initialize_nif_dirty(list()) -> reference() | {error, atom()}.
 
-xor8_buffered_initialize_nif_dirty(_, _) ->
+xor8_buffered_initialize_nif_dirty(_) ->
    not_loaded(?LINE).
 
 
@@ -314,19 +375,24 @@ xor8_buffered_initialize_nif_dirty(_, _) ->
 %% @doc Tests to see if the passed argument is in the filter.  The first
 %% argument must be the pre-initialized filter.
 %%
-%% DO NOT PASS PRE-HASHED VALUES.  The method / fun passed to the 
-%% initialization function is saved, and is used to compute the hash.
+%% DO NOT PASS PRE-HASHED VALUES unless you've specified a pre-hashed filter.  
+%% The method / fun passed to the initialization function is saved, and 
+%% is used to compute the hash.
 %%
 %% Returns true if the element exists (or if there is a false positive).
 %% False if not.
 %% @end
+%%-----------------------------------------------------------------------------
 -spec xor8_contain({reference(), atom() | fun()}, term()) -> true | false.
 
-xor8_contain({Filter, HashFunction}, Key) when is_function(HashFunction) ->
-   xor8_contain_nif(Filter, HashFunction(Key), passed);
+xor8_contain({Filter, default_hash}, Key) ->
+    xor8_contain_nif(Filter, erlang:phash2(Key));
 
-xor8_contain({Filter, HashFunction}, Key) ->
-   xor8_contain_nif(Filter, Key, HashFunction).
+xor8_contain({Filter, HashFunction}, Key) when is_function(HashFunction) ->
+   xor8_contain_nif(Filter, HashFunction(Key));
+
+xor8_contain({Filter, _HashFunction}, Key) ->
+   xor8_contain_nif(Filter, Key).
 
 
 %%-----------------------------------------------------------------------------
@@ -337,25 +403,22 @@ xor8_contain({Filter, HashFunction}, Key) ->
 %% The third argument will be returned instead of `false' if the element is
 %% not in the filter.
 %% @end
+%%-----------------------------------------------------------------------------
 -spec xor8_contain({reference(), atom() | fun()}, term(), any())
    -> true | any().
+
+xor8_contain({Filter, default_hash}, Key, ReturnValue) ->
+    xor8_contain({Filter, default_hash}, erlang:phash2(Key), ReturnValue);
 
 xor8_contain({Filter, HashFunction}, Key, ReturnValue) 
    when is_function(HashFunction) ->
    
    HashedKey = HashFunction(Key),
-   case xor8_contain_nif(Filter, HashedKey, passed) of
-   
-      false ->
-         ReturnValue;
+   xor8_contain({Filter, HashFunction}, HashedKey, ReturnValue);
 
-      Value ->
-         Value
-   end;
+xor8_contain({Filter, _HashFunction}, Key, ReturnValue) ->
 
-xor8_contain({Filter, HashFunction}, Key, ReturnValue) ->
-
-   case xor8_contain_nif(Filter, Key, HashFunction) of
+   case xor8_contain_nif(Filter, Key) of
 
       false ->
          ReturnValue;
@@ -372,9 +435,9 @@ xor8_contain({Filter, HashFunction}, Key, ReturnValue) ->
 %% Returns `false' if otherwise.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor8_contain_nif(reference(), term(), atom()) -> true | false.
+-spec xor8_contain_nif(reference(), term()) -> true | false.
 
-xor8_contain_nif(_, _, _) ->
+xor8_contain_nif(_, _) ->
    not_loaded(?LINE).
 
 
@@ -404,90 +467,15 @@ xor8_free_nif(_) ->
 
 
 %%-----------------------------------------------------------------------------
-%% @doc See the xor8/2 documentation.
-%% @end
-%%-----------------------------------------------------------------------------
--spec xor16(list()) -> {reference(), default_hash} | {error, atom()}.
-
-xor16(List) ->
-   xor16(List, default_hash).
-
-
-%%-----------------------------------------------------------------------------
-%% @doc Initializes the xor filter, and runs the specified pre-defined 
-%% hash function on each of the elements.  
-%%
-%% See the xor8/2 documentation.
-%% @end
-%%-----------------------------------------------------------------------------
--spec xor16(list(), atom() | fun()) -> {reference(), atom() | fun()} | {error, atom()}.
-
-xor16(List, HashFunction) when 
-   HashFunction == default_hash;
-   HashFunction == fast_hash;
-   HashFunction == none ->
-
-   case xor16_initialize(List, HashFunction) of
-      
-      {error, Reason} ->
-         {error, Reason};
-
-      Reference ->
-         {Reference, HashFunction}
-   end;
-
-xor16(List, HashFunction) when is_function(HashFunction) ->
-
-   case erlang:fun_info(HashFunction, arity) of
-
-      {arity, 1} ->
-
-         HashedList = lists:map(
-            fun(Element) ->
-               HashFunction(Element)
-            end,
-         List),
-         
-         case xor16_initialize(HashedList, passed) of
-            
-            {error, Reason} ->
-               {error, Reason};
-
-            Reference ->
-               {Reference, HashFunction}
-         end;
-
-      _ ->
-         {error, wrong_arity_hash_function_error}
-   end;
-
-xor16(_, _) ->
-   {error, invalid_hash_method}.
-
-
-%%-----------------------------------------------------------------------------
-%% @doc Internal function that determines if the nif should be dirty scheduled 
-%% or not, if above 10K
-%% records.
-%% @end
-%%-----------------------------------------------------------------------------
-xor16_initialize(List, HashFunction) when length(List) >= 10000 ->
-   xor16_initialize_nif_dirty(List, HashFunction);
-
-xor16_initialize(List, HashFunction) ->
-   xor16_initialize_nif(List, HashFunction).
-
-
-%%-----------------------------------------------------------------------------
 %% @doc Nif api.  Initializes the xor filter on a passed list.  
 %% If the list isn't a list of 64 unsigned numbers, an error will be thrown.
 %% 
 %% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor16_initialize_nif(list(), atom()) -> reference() | {error, atom()}.
+-spec xor16_initialize_nif(list()) -> reference() | {error, atom()}.
 
-xor16_initialize_nif(_, _) ->
+xor16_initialize_nif(_) ->
    not_loaded(?LINE).
 
 
@@ -498,86 +486,10 @@ xor16_initialize_nif(_, _) ->
 %% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor16_initialize_nif_dirty(list(), atom()) 
-   -> reference() | {error, atom()}.
+-spec xor16_initialize_nif_dirty(list()) -> reference() | {error, atom()}.
 
-xor16_initialize_nif_dirty(_, _) ->
+xor16_initialize_nif_dirty(_) ->
    not_loaded(?LINE).
-
-
-%%-----------------------------------------------------------------------------
-%% @doc Similar to the initialize function, but is a buffered version for lists
-%% that are large.  This version uses the default hash.
-%% @end
-%%-----------------------------------------------------------------------------
--spec xor16_buffered(list()) -> {reference(), atom()} | {error, atom()}.
-
-xor16_buffered(List) ->
-   xor16_buffered(List, default_hash).
- 
-
-%%-----------------------------------------------------------------------------
-%% @doc Similar to the initialize function, but is a buffered version for lists
-%% that are over 100,000,000 keys.  Use for greater speed.
-%%
-%% See xor16/1 for example usage.
-%% 
-%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
-%% @end
-%%-----------------------------------------------------------------------------
--spec xor16_buffered(list(), atom() | fun()) 
-   -> {reference(), atom() | fun()} | {error, atom()}.
-
-xor16_buffered(List, HashFunction) when 
-   HashFunction == default_hash;
-   HashFunction == fast_hash;
-   HashFunction == none ->
-
-   case xor16_buffered_initialize(List, HashFunction) of
-      
-      {error, Reason} ->
-         {error, Reason};
-
-      Reference ->
-         {Reference, HashFunction}
-   end;
-
-xor16_buffered(List, HashFunction) when is_function(HashFunction) ->
-
-   case erlang:fun_info(HashFunction, arity) of
-
-      {arity, 1} ->
-
-         HashedList = lists:map(
-            fun(Element) ->
-               HashFunction(Element)
-            end,
-         List),
-         case xor16_buffered_initialize(HashedList, passed) of
-
-            {error, Reason} ->
-               {error, Reason};
-
-            Reference ->
-               {Reference, HashFunction}
-         end;
-
-      _ ->
-         {error, wrong_arity_hash_function_error}
-   end.
-
-
-%%-----------------------------------------------------------------------------
-%% @doc Internal function that determines if the nif should be dirty scheduled 
-%% or not, if above 10K
-%% records.
-%% @end
-%%-----------------------------------------------------------------------------
-xor16_buffered_initialize(List, HashFunction) when length(List) >= 10000 ->
-   xor16_buffered_initialize_nif_dirty(List, HashFunction);
-
-xor16_buffered_initialize(List, HashFunction) ->
-   xor16_buffered_initialize_nif(List, HashFunction).
 
 
 %%-----------------------------------------------------------------------------
@@ -587,10 +499,9 @@ xor16_buffered_initialize(List, HashFunction) ->
 %% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor16_buffered_initialize_nif(list(), atom()) 
-   -> reference() | {error, atom()}.
+-spec xor16_buffered_initialize_nif(list()) -> reference() | {error, atom()}.
 
-xor16_buffered_initialize_nif(_, _) ->
+xor16_buffered_initialize_nif(_) ->
    not_loaded(?LINE).
 
 
@@ -601,10 +512,9 @@ xor16_buffered_initialize_nif(_, _) ->
 %% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor16_buffered_initialize_nif_dirty(list(), atom()) 
-   -> reference() | {error, atom()}.
+-spec xor16_buffered_initialize_nif_dirty(list()) -> reference() | {error, atom()}.
 
-xor16_buffered_initialize_nif_dirty(_, _) ->
+xor16_buffered_initialize_nif_dirty(_) ->
    not_loaded(?LINE).
 
 
@@ -620,11 +530,14 @@ xor16_buffered_initialize_nif_dirty(_, _) ->
 %% @end
 -spec xor16_contain({reference(), atom() | fun()}, term()) -> true | false.
 
-xor16_contain({Filter, HashFunction}, Key) when is_function(HashFunction) ->
-   xor16_contain_nif(Filter, HashFunction(Key), passed);
+xor16_contain({Filter, default_hash}, Key) ->
+    xor16_contain_nif(Filter, erlang:phash2(Key));
 
-xor16_contain({Filter, HashFunction}, Key) ->
-   xor16_contain_nif(Filter, Key, HashFunction).
+xor16_contain({Filter, HashFunction}, Key) when is_function(HashFunction) ->
+   xor16_contain_nif(Filter, HashFunction(Key));
+
+xor16_contain({Filter, _HashFunction}, Key) ->
+   xor16_contain_nif(Filter, Key).
 
 
 %%-----------------------------------------------------------------------------
@@ -642,18 +555,11 @@ xor16_contain({Filter, HashFunction}, Key, ReturnValue)
    when is_function(HashFunction) ->
    
    HashedKey = HashFunction(Key),
-   case xor16_contain_nif(Filter, HashedKey, passed) of
-   
-      false ->
-         ReturnValue;
+   xor16_contain({Filter, HashFunction}, HashedKey, ReturnValue);
 
-      Value ->
-         Value
-   end;
+xor16_contain({Filter, _HashFunction}, Key, ReturnValue) ->
 
-xor16_contain({Filter, HashFunction}, Key, ReturnValue) ->
-
-   case xor16_contain_nif(Filter, Key, HashFunction) of
+   case xor16_contain_nif(Filter, Key) of
 
       false ->
          ReturnValue;
@@ -670,9 +576,9 @@ xor16_contain({Filter, HashFunction}, Key, ReturnValue) ->
 %% Returns `false' if otherwise.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor16_contain_nif(reference(), term(), atom()) -> true | false.
+-spec xor16_contain_nif(reference(), term()) -> true | false.
 
-xor16_contain_nif(_, _, _) ->
+xor16_contain_nif(_, _) ->
    not_loaded(?LINE).
 
 
@@ -695,7 +601,7 @@ xor16_free({Filter, _}) ->
 %% Returns `ok'.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor16_free_nif(reference()) -> ok.
+-spec xor16_free_nif(any()) -> no_return().
 
 xor16_free_nif(_) ->
    not_loaded(?LINE).
@@ -716,4 +622,4 @@ init() ->
    erlang:load_nif(SoName, 0).
 
 not_loaded(Line) ->
-   exit({not_loaded, [{module, ?MODULE}, {line, Line}]}).
+   erlang:nif_error({not_loaded, [{module, ?MODULE}, {line, Line}]}).

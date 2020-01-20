@@ -69,11 +69,7 @@
    xor16_buffered/2,
    xor16_contain/2,
    xor16_contain/3,
-   xor16_free/1,
-
-
-   over_10_thousand/1
-
+   xor16_free/1
 ]).
 -on_load(init/0).
 

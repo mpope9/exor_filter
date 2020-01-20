@@ -228,7 +228,8 @@ initialize_filter(List, HashFunction, FilterType)
    case erlang:fun_info(HashFunction, arity) of
 
       {arity, 1} ->
-         nif_wrapper(List, HashFunction, FilterType);
+         HashedList = lists:map(HashFunction, List),
+         nif_wrapper(HashedList, HashFunction, FilterType);
 
       _ ->
          {error, wrong_arity_hash_function_error}

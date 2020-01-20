@@ -41,8 +41,8 @@ Do not modify the return value of the `xor8:new/1` or `/2` functions.  The other
 * To specify the hashing algorithm to use, use the `xor8:new/2` function.
 * The filter initialization functions return values contain the context of hashing, so there is no need to specify it in the `xor8:contain/2` function.
     * **Do not pre-hash the value** being passed to `xor8:contain/2` or `/3`.  **Pass the raw value!**
-    *  (Unless you're using pre-hashed data.  See below).
-* The default hashing mechanisms remove duplicate keys.  Pre-hashed data will need to be checked by the user.  An error will be returned if duplicate keys are detected.
+    *  (Unless you've explicitly set that you're using pre-hashed data.  See below).
+* The default hashing mechanisms remove duplicate keys.  Pre-hashed data should be checked by the user.  The libary will return an error on initialization if dupes are detected.
 ### Example
 ```erlang
 Filter = xor8:new([1, 2, 3], none),
@@ -103,13 +103,6 @@ The usage of the xor16 is the same.  That structure is larger, but has a smaller
 ## Buffered Initialization
 The buffered versions of initialize are provided for larger data sets.  This can be faster.  See `xor8:new_buffered/2` for more information.
 
-## Unsafe Usage
-The underlying C library used has an issue where duplicate keys cause an infinite loop on initialization.  The convinience modules `xor8` and `xor16` check for duplicates in the passed list for pre-hashed data.  HOWEVER, they're just wrappers for the raw `exor_filter` module.  If you're confident that the values in the list are unique, and wish to skip the checking step in initialization for greater speed, you can use the following example as a template:
-```
-Filter = exor_filter:nif_wrapper([1, 2, 3], none, xor8),
-true   = xor8:contain(Filter, 1),
-ok     = xor8:free(Filter).
-```
 You didn't hear it from me, though ;)
 
 Build

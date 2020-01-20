@@ -71,8 +71,9 @@
    xor16_contain/3,
    xor16_free/1,
 
-   %% Unsafe API.  Use with caution.
-   nif_wrapper/3
+
+   over_10_thousand/1
+
 ]).
 -on_load(init/0).
 
@@ -218,46 +219,20 @@ xor16_buffered(List, HashFunction) ->
 
 initialize_filter(PassedList, default_hash, FilterType) ->
 
-   DupedList = 
-      lists:foldr(
-         fun(X, Acc) -> 
-            [erlang:phash2(X)] ++ Acc
-         end, [], PassedList),
-
+   DupedList = lists:map(fun erlang:phash2/1, PassedList),
    List = lists:usort(DupedList),
    nif_wrapper(List, default_hash, FilterType);
 
 initialize_filter(List, none, FilterType) ->
+   nif_wrapper(List, none, FilterType);
 
-   DeDupedList = lists:usort(List),
-   case length(List) == length(DeDupedList) of
-       
-      true ->
-         nif_wrapper(List, none, FilterType);
-
-      _ ->
-         {error, duplicates_in_hash_error}
-   end;
-
-initialize_filter(PassedList, HashFunction, FilterType) 
+initialize_filter(List, HashFunction, FilterType) 
    when is_function(HashFunction) ->
 
-   DupedList = 
-      lists:foldr(
-         fun(X, Acc) -> 
-            [erlang:phash2(X)] ++ Acc
-         end, [], PassedList),
+   case erlang:fun_info(HashFunction, arity) of
 
-   List = lists:usort(DupedList),
-
-   EqualLength = length(List) == length(PassedList),
-   case {erlang:fun_info(HashFunction, arity), EqualLength} of
-
-      {{arity, 1}, true} ->
+      {arity, 1} ->
          nif_wrapper(List, HashFunction, FilterType);
-
-      {_, false} ->
-         {error, duplicates_in_hash_error};
 
       _ ->
          {error, wrong_arity_hash_function_error}
@@ -293,29 +268,41 @@ nif_wrapper(List, HashFunction, FilterType) ->
 %%-----------------------------------------------------------------------------
 -spec filter_selector(list(), atom()) -> reference() | {error, atom()}.
 
-filter_selector(List, xor8) when length(List) >= 10000 ->
-   xor8_initialize_nif_dirty(List);
-
 filter_selector(List, xor8) ->
-   xor8_initialize_nif(List);
 
-filter_selector(List, xor8_buffered) when length(List) >= 10000 ->
-   xor8_buffered_initialize_nif_dirty(List);
+   case over_10_thousand(List) of
+      true ->
+         xor8_initialize_nif_dirty(List);
+      _ ->
+         xor8_initialize_nif(List)
+   end;
 
 filter_selector(List, xor8_buffered) ->
-   xor8_buffered_initialize_nif(List);
 
-filter_selector(List, xor16) when length(List) >= 10000 ->
-   xor16_initialize_nif_dirty(List);
+   case over_10_thousand(List) of
+      true ->
+         xor8_buffered_initialize_nif_dirty(List);
+      _ ->
+         xor8_buffered_initialize_nif(List)
+   end;
 
 filter_selector(List, xor16) ->
-   xor16_initialize_nif(List);
 
-filter_selector(List, xor16_buffered) when length(List) >= 10000 ->
-   xor16_buffered_initialize_nif_dirty(List);
+   case over_10_thousand(List) of
+      true ->
+         xor16_initialize_nif_dirty(List);
+      _ ->
+         xor16_initialize_nif(List)
+   end;
 
 filter_selector(List, xor16_buffered) ->
-   xor16_buffered_initialize_nif(List).
+
+   case over_10_thousand(List) of
+      true ->
+         xor16_buffered_initialize_nif_dirty(List);
+      _ ->
+         xor16_buffered_initialize_nif(List)
+   end.
 
 
 %%-----------------------------------------------------------------------------
@@ -551,6 +538,9 @@ xor16_contain({Filter, _HashFunction}, Key) ->
 -spec xor16_contain({reference(), atom() | fun()}, term(), any())
    -> true | any().
 
+xor16_contain({Filter, default_hash}, Key, ReturnValue) ->
+    xor16_contain({Filter, default_hash}, erlang:phash2(Key), ReturnValue);
+
 xor16_contain({Filter, HashFunction}, Key, ReturnValue) 
    when is_function(HashFunction) ->
    
@@ -606,6 +596,18 @@ xor16_free({Filter, _}) ->
 xor16_free_nif(_) ->
    not_loaded(?LINE).
 
+
+over_10_thousand(List) ->
+   over_10_thousand(List, 0).
+
+over_10_thousand(_, 10001) ->
+   true;
+
+over_10_thousand([], Counter) when Counter =< 10000 ->
+   false;
+
+over_10_thousand([_|L], Counter) ->
+   over_10_thousand(L, Counter + 1).
 
 init() ->
    SoName = case code:priv_dir(?APPNAME) of

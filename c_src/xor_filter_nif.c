@@ -166,7 +166,7 @@ xor8_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffere
    if(!xor8_allocate(list_length, filter)) 
    {
       enif_free(filter);
-      enif_release_resource(filter);
+      enif_release_resource(filter_resource);
       return mk_error(env, "xor8_allocate_error");
    }
 
@@ -177,7 +177,7 @@ xor8_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffere
       {
          enif_free(filter);
          enif_release_resource(filter_resource);
-         return mk_error(env, "xor8_buffered_populate_error");
+         return mk_error(env, "duplicates_in_hash_error");
       }
    }
    else
@@ -186,7 +186,7 @@ xor8_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffere
       {
          enif_free(filter);
          enif_release_resource(filter_resource);
-         return mk_error(env, "xor8_populate_error");
+         return mk_error(env, "duplicates_in_hash_error");
       }
    }
 
@@ -324,7 +324,7 @@ xor16_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffer
       {
          enif_free(filter);
          enif_release_resource(filter_resource);
-         return mk_error(env, "xor16_populate_error");
+         return mk_error(env, "duplicates_in_hash_error");
       }
    }
    else
@@ -333,7 +333,7 @@ xor16_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffer
       {
          enif_free(filter);
          enif_release_resource(filter_resource);
-         return mk_error(env, "xor16_buffered_populate_error");
+         return mk_error(env, "duplicates_in_hash_error");
       }
    }
 

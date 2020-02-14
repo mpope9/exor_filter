@@ -22,7 +22,10 @@
     new_buffered/1,
     new_buffered/2,
     contain/2,
-    contain/3
+    contain/3,
+    to_bin/1,
+    from_bin/1,
+    from_bin/2
 ]).
 
 %%-----------------------------------------------------------------------------
@@ -100,3 +103,40 @@ contain(Filter, Key) ->
 
 contain(Filter, Key, ReturnValue) ->
     exor_filter:xor16_contain(Filter, Key, ReturnValue).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Serializes the filter to a binary that can be later be deserialized with
+%% `from_bin/1' or `from_bin/2'
+%%
+%% Returns `binary()'.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec to_bin(reference()) -> binary().
+
+to_bin(Filter) ->
+    exor_filter:xor16_to_bin(Filter).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Deserializes a filter from a binary previously serialized with `to_bin/1'
+%% that used the default hash function.
+%%
+%% @end
+%%-----------------------------------------------------------------------------
+-spec from_bin(binary()) -> {reference(), atom()}.
+
+from_bin(Filter) ->
+    exor_filter:xor16_from_bin(Filter).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Deserializes a filter from a binary previously serialized with `to_bin/1'
+%% that used a custom hash function.
+%%
+%% @end
+%%-----------------------------------------------------------------------------
+-spec from_bin(binary(), atom() | fun()) -> {reference(), atom() | fun()}.
+
+from_bin(Filter, Hash) ->
+    exor_filter:xor16_from_bin(Filter, Hash).

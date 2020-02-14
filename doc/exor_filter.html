@@ -64,9 +64,9 @@ hash function on each of the elements.</td></tr>
 that are over 100,000,000 keys.</td></tr>
 <tr><td valign="top"><a href="#xor16_contain-2">xor16_contain/2</a></td><td>Tests to see if the passed argument is in the filter.</td></tr>
 <tr><td valign="top"><a href="#xor16_contain-3">xor16_contain/3</a></td><td>Tests to see if the passed argument is in the filter.</td></tr>
-<tr><td valign="top"><a href="#xor16_from_bin-1">xor16_from_bin/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#xor16_from_bin-2">xor16_from_bin/2</a></td><td></td></tr>
-<tr><td valign="top"><a href="#xor16_to_bin-1">xor16_to_bin/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#xor16_from_bin-1">xor16_from_bin/1</a></td><td>Deserialize the filter from a binary using the defauilt hash function.</td></tr>
+<tr><td valign="top"><a href="#xor16_from_bin-2">xor16_from_bin/2</a></td><td>Deserialize the filter from a binary using a custom hash function.</td></tr>
+<tr><td valign="top"><a href="#xor16_to_bin-1">xor16_to_bin/1</a></td><td>Serialize the filter to a binary.</td></tr>
 <tr><td valign="top"><a href="#xor8-1">xor8/1</a></td><td>Initializes the xor filter, and runs the default hash function on  
 each of the elements in the list.</td></tr>
 <tr><td valign="top"><a href="#xor8-2">xor8/2</a></td><td>Initializes the xor filter, and runs the specified pre-defined  
@@ -77,9 +77,9 @@ hash function on each of the elements.</td></tr>
 that are over 100,000,000 keys.</td></tr>
 <tr><td valign="top"><a href="#xor8_contain-2">xor8_contain/2</a></td><td>Tests to see if the passed argument is in the filter.</td></tr>
 <tr><td valign="top"><a href="#xor8_contain-3">xor8_contain/3</a></td><td>Tests to see if the passed argument is in the filter.</td></tr>
-<tr><td valign="top"><a href="#xor8_from_bin-1">xor8_from_bin/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#xor8_from_bin-2">xor8_from_bin/2</a></td><td></td></tr>
-<tr><td valign="top"><a href="#xor8_to_bin-1">xor8_to_bin/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#xor8_from_bin-1">xor8_from_bin/1</a></td><td>Deserialize the filter from a binary using the defauilt hash function.</td></tr>
+<tr><td valign="top"><a href="#xor8_from_bin-2">xor8_from_bin/2</a></td><td>Deserialize the filter from a binary using a custom hash function.</td></tr>
+<tr><td valign="top"><a href="#xor8_to_bin-1">xor8_to_bin/1</a></td><td>Serialize the filter to a binary.</td></tr>
 </table>
 
 <h2><a name="functions">Function Details</a></h2>
@@ -137,18 +137,24 @@ argument must be the pre-initialized filter.</p>
 
 <h3 class="function"><a name="xor16_from_bin-1">xor16_from_bin/1</a></h3>
 <div class="spec">
-<p><tt>xor16_from_bin(Bin) -&gt; any()</tt></p>
-</div>
+<p><tt>xor16_from_bin(Bin::binary()) -&gt; {reference(), default_hash}</tt><br></p>
+</div><p><p>Deserialize the filter from a binary using the defauilt hash function</p>
+ 
+  Returns <code>{reference(), default_hash}</code></p>
 
 <h3 class="function"><a name="xor16_from_bin-2">xor16_from_bin/2</a></h3>
 <div class="spec">
-<p><tt>xor16_from_bin(Bin, Hash) -&gt; any()</tt></p>
-</div>
+<p><tt>xor16_from_bin(Bin::binary(), Hash::atom() | function()) -&gt; {reference(), atom() | function()}</tt><br></p>
+</div><p><p>Deserialize the filter from a binary using a custom hash function</p>
+ 
+  Returns <code>{reference(), atom() | fun()}</code></p>
 
 <h3 class="function"><a name="xor16_to_bin-1">xor16_to_bin/1</a></h3>
 <div class="spec">
-<p><tt>xor16_to_bin(X1) -&gt; any()</tt></p>
-</div>
+<p><tt>xor16_to_bin(X1::{reference(), any()}) -&gt; binary()</tt><br></p>
+</div><p><p>Serialize the filter to a binary</p>
+ 
+  Returns <code>binary()</code>.</p>
 
 <h3 class="function"><a name="xor8-1">xor8/1</a></h3>
 <div class="spec">
@@ -230,18 +236,24 @@ argument must be the pre-initialized filter.</p>
 
 <h3 class="function"><a name="xor8_from_bin-1">xor8_from_bin/1</a></h3>
 <div class="spec">
-<p><tt>xor8_from_bin(Bin) -&gt; any()</tt></p>
-</div>
+<p><tt>xor8_from_bin(Bin::binary()) -&gt; {reference(), default_hash}</tt><br></p>
+</div><p><p>Deserialize the filter from a binary using the defauilt hash function</p>
+ 
+  Returns <code>{reference(), default_hash}</code></p>
 
 <h3 class="function"><a name="xor8_from_bin-2">xor8_from_bin/2</a></h3>
 <div class="spec">
-<p><tt>xor8_from_bin(Bin, Hash) -&gt; any()</tt></p>
-</div>
+<p><tt>xor8_from_bin(Bin::binary(), Hash::atom() | function()) -&gt; {reference(), atom() | function()}</tt><br></p>
+</div><p><p>Deserialize the filter from a binary using a custom hash function</p>
+ 
+  Returns <code>{reference(), atom() | fun()}</code></p>
 
 <h3 class="function"><a name="xor8_to_bin-1">xor8_to_bin/1</a></h3>
 <div class="spec">
-<p><tt>xor8_to_bin(X1) -&gt; any()</tt></p>
-</div>
+<p><tt>xor8_to_bin(X1::{reference(), any()}) -&gt; binary()</tt><br></p>
+</div><p><p>Serialize the filter to a binary</p>
+ 
+  Returns <code>binary()</code>.</p>
 <hr>
 
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>

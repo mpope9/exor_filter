@@ -58,13 +58,19 @@
    xor8_buffered/2,
    xor8_contain/2,
    xor8_contain/3,
+   xor8_to_bin/1,
+   xor8_from_bin/1,
+   xor8_from_bin/2,
 
    xor16/1,
    xor16/2,
    xor16_buffered/1,
    xor16_buffered/2,
    xor16_contain/2,
-   xor16_contain/3
+   xor16_contain/3,
+   xor16_to_bin/1,
+   xor16_from_bin/1,
+   xor16_from_bin/2
 ]).
 -on_load(init/0).
 
@@ -421,6 +427,49 @@ xor8_contain_nif(_, _) ->
 
 
 %%-----------------------------------------------------------------------------
+%% @doc Serialize the filter to a binary
+%%
+%% Returns `binary()'.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor8_to_bin({reference(), any()}) -> binary().
+
+xor8_to_bin({Filter, _}) ->
+    xor8_to_bin_nif(Filter).
+
+%% @private
+xor8_to_bin_nif(_) ->
+   not_loaded(?LINE).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Deserialize the filter from a binary using the defauilt hash function
+%%
+%% Returns `{reference(), default_hash}'
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor8_from_bin(binary()) -> {reference(), default_hash}.
+
+xor8_from_bin(Bin) ->
+    xor8_from_bin(Bin, default_hash).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Deserialize the filter from a binary using a custom hash function
+%%
+%% Returns `{reference(), atom() | fun()}'
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor8_from_bin(binary(), atom() | fun()) -> {reference(), atom() | fun()}.
+
+xor8_from_bin(Bin, Hash) ->
+    {xor8_from_bin_nif(Bin), Hash}.
+
+%% @private
+xor8_from_bin_nif(_) ->
+   not_loaded(?LINE).
+
+%%-----------------------------------------------------------------------------
 %% @doc Nif api.  Initializes the xor filter on a passed list.  
 %% If the list isn't a list of 64 unsigned numbers, an error will be thrown.
 %% 
@@ -536,6 +585,48 @@ xor16_contain({Filter, _HashFunction}, Key, ReturnValue) ->
 -spec xor16_contain_nif(reference(), term()) -> true | false.
 
 xor16_contain_nif(_, _) ->
+   not_loaded(?LINE).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Serialize the filter to a binary
+%%
+%% Returns `binary()'.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor16_to_bin({reference(), any()}) -> binary().
+
+xor16_to_bin({Filter, _}) ->
+    xor16_to_bin_nif(Filter).
+
+%% @private
+xor16_to_bin_nif(_) ->
+   not_loaded(?LINE).
+
+%%-----------------------------------------------------------------------------
+%% @doc Deserialize the filter from a binary using the defauilt hash function
+%%
+%% Returns `{reference(), default_hash}'
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor16_from_bin(binary()) -> {reference(), default_hash}.
+
+xor16_from_bin(Bin) ->
+    xor16_from_bin(Bin, default_hash).
+
+%%-----------------------------------------------------------------------------
+%% @doc Deserialize the filter from a binary using a custom hash function
+%%
+%% Returns `{reference(), atom() | fun()}'
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor16_from_bin(binary(), atom() | fun()) -> {reference(), atom() | fun()}.
+
+xor16_from_bin(Bin, Hash) ->
+    {xor16_from_bin_nif(Bin), Hash}.
+
+%% @private
+xor16_from_bin_nif(_) ->
    not_loaded(?LINE).
 
 

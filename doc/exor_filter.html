@@ -10,7 +10,7 @@
 <hr>
 
 <h1>Module exor_filter</h1>
-<ul class="index"><li><a href="#description">Description</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>Nif wrapper for the xor_filter:  
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>Nif wrapper for the xor_filter:  
 https://github.com/FastFilter/xor_singleheader.
 <p>Copyright © (C) 2019, Matthew Pope</p>
 
@@ -54,6 +54,12 @@ has a smaller false positive rate.</p>
 This can be faster.  See xor8_buffered/1 for more information.</p>
  
   Convinience modules <code>xor8</code> and <code>xor16</code> are provided.
+<h2><a name="types">Data Types</a></h2>
+
+<h3 class="typedecl"><a name="type-hash_function">hash_function()</a></h3>
+<p><tt>hash_function() = default_hash | none | fun((any()) -&gt; non_neg_integer())</tt></p>
+
+
 <h2><a name="index">Function Index</a></h2>
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#xor16-1">xor16/1</a></td><td>See the xor8/2 documentation.</td></tr>
 <tr><td valign="top"><a href="#xor16-2">xor16/2</a></td><td>Initializes the xor filter, and runs the specified pre-defined  
@@ -64,9 +70,8 @@ hash function on each of the elements.</td></tr>
 that are over 100,000,000 keys.</td></tr>
 <tr><td valign="top"><a href="#xor16_contain-2">xor16_contain/2</a></td><td>Tests to see if the passed argument is in the filter.</td></tr>
 <tr><td valign="top"><a href="#xor16_contain-3">xor16_contain/3</a></td><td>Tests to see if the passed argument is in the filter.</td></tr>
-<tr><td valign="top"><a href="#xor16_from_bin-1">xor16_from_bin/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#xor16_from_bin-2">xor16_from_bin/2</a></td><td></td></tr>
-<tr><td valign="top"><a href="#xor16_to_bin-1">xor16_to_bin/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#xor16_from_bin-1">xor16_from_bin/1</a></td><td>Deserialize the filter from a previous <code>xor16_to_bin</code> call.</td></tr>
+<tr><td valign="top"><a href="#xor16_to_bin-1">xor16_to_bin/1</a></td><td>Serialize the filter to a binary.</td></tr>
 <tr><td valign="top"><a href="#xor8-1">xor8/1</a></td><td>Initializes the xor filter, and runs the default hash function on  
 each of the elements in the list.</td></tr>
 <tr><td valign="top"><a href="#xor8-2">xor8/2</a></td><td>Initializes the xor filter, and runs the specified pre-defined  
@@ -77,9 +82,8 @@ hash function on each of the elements.</td></tr>
 that are over 100,000,000 keys.</td></tr>
 <tr><td valign="top"><a href="#xor8_contain-2">xor8_contain/2</a></td><td>Tests to see if the passed argument is in the filter.</td></tr>
 <tr><td valign="top"><a href="#xor8_contain-3">xor8_contain/3</a></td><td>Tests to see if the passed argument is in the filter.</td></tr>
-<tr><td valign="top"><a href="#xor8_from_bin-1">xor8_from_bin/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#xor8_from_bin-2">xor8_from_bin/2</a></td><td></td></tr>
-<tr><td valign="top"><a href="#xor8_to_bin-1">xor8_to_bin/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#xor8_from_bin-1">xor8_from_bin/1</a></td><td>Deserialize the filter from a previous <code>xor8_to_bin</code> call.</td></tr>
+<tr><td valign="top"><a href="#xor8_to_bin-1">xor8_to_bin/1</a></td><td>Serialize the filter to a binary.</td></tr>
 </table>
 
 <h2><a name="functions">Function Details</a></h2>
@@ -91,7 +95,7 @@ that are over 100,000,000 keys.</td></tr>
 
 <h3 class="function"><a name="xor16-2">xor16/2</a></h3>
 <div class="spec">
-<p><tt>xor16(List::list(), HashFunction::atom() | function()) -&gt; {reference(), atom() | function()} | {error, atom()}</tt><br></p>
+<p><tt>xor16(List::list(), HashFunction::<a href="#type-hash_function">hash_function()</a>) -&gt; {reference(), <a href="#type-hash_function">hash_function()</a>} | {error, atom()}</tt><br></p>
 </div><p><p>Initializes the xor filter, and runs the specified pre-defined  
 hash function on each of the elements.</p>
  
@@ -105,7 +109,7 @@ hash function on each of the elements.</p>
 
 <h3 class="function"><a name="xor16_buffered-2">xor16_buffered/2</a></h3>
 <div class="spec">
-<p><tt>xor16_buffered(List::list(), HashFunction::atom() | function()) -&gt; {reference(), atom() | function()} | {error, atom()}</tt><br></p>
+<p><tt>xor16_buffered(List::list(), HashFunction::<a href="#type-hash_function">hash_function()</a>) -&gt; {reference(), <a href="#type-hash_function">hash_function()</a>} | {error, atom()}</tt><br></p>
 </div><p><p>Similar to the initialize function, but is a buffered version for lists  
 that are over 100,000,000 keys.  Use for greater speed.</p>
  
@@ -115,7 +119,7 @@ that are over 100,000,000 keys.  Use for greater speed.</p>
 
 <h3 class="function"><a name="xor16_contain-2">xor16_contain/2</a></h3>
 <div class="spec">
-<p><tt>xor16_contain(X1::{reference(), atom() | function()}, Key::term()) -&gt; true | false</tt><br></p>
+<p><tt>xor16_contain(X1::{reference(), <a href="#type-hash_function">hash_function()</a>}, Key::term()) -&gt; true | false</tt><br></p>
 </div><p><p>Tests to see if the passed argument is in the filter.  The first  
 argument must be the pre-initialized filter.</p>
  
@@ -127,7 +131,7 @@ initialization function is saved, and is used to compute the hash.</p>
 
 <h3 class="function"><a name="xor16_contain-3">xor16_contain/3</a></h3>
 <div class="spec">
-<p><tt>xor16_contain(X1::{reference(), atom() | function()}, Key::term(), ReturnValue::any()) -&gt; true | any()</tt><br></p>
+<p><tt>xor16_contain(X1::{reference(), <a href="#type-hash_function">hash_function()</a>}, Key::term(), ReturnValue::any()) -&gt; true | any()</tt><br></p>
 </div><p><p>Tests to see if the passed argument is in the filter.  The first  
 argument must be the pre-initialized filter.</p>
  
@@ -137,18 +141,17 @@ argument must be the pre-initialized filter.</p>
 
 <h3 class="function"><a name="xor16_from_bin-1">xor16_from_bin/1</a></h3>
 <div class="spec">
-<p><tt>xor16_from_bin(Bin) -&gt; any()</tt></p>
-</div>
-
-<h3 class="function"><a name="xor16_from_bin-2">xor16_from_bin/2</a></h3>
-<div class="spec">
-<p><tt>xor16_from_bin(Bin, Hash) -&gt; any()</tt></p>
-</div>
+<p><tt>xor16_from_bin(X1::{binary(), <a href="#type-hash_function">hash_function()</a>}) -&gt; {reference(), <a href="#type-hash_function">hash_function()</a>}</tt><br></p>
+</div><p><p>Deserialize the filter from a previous <code>xor16_to_bin</code> call.</p>
+ 
+  Returns <code>{reference(), hash_function()}</code></p>
 
 <h3 class="function"><a name="xor16_to_bin-1">xor16_to_bin/1</a></h3>
 <div class="spec">
-<p><tt>xor16_to_bin(X1) -&gt; any()</tt></p>
-</div>
+<p><tt>xor16_to_bin(X1::{reference(), <a href="#type-hash_function">hash_function()</a>}) -&gt; {binary(), <a href="#type-hash_function">hash_function()</a>}</tt><br></p>
+</div><p><p>Serialize the filter to a binary</p>
+ 
+  Returns <code>binary()</code>.</p>
 
 <h3 class="function"><a name="xor8-1">xor8/1</a></h3>
 <div class="spec">
@@ -160,7 +163,7 @@ each of the elements in the list.  This should be fine for the general case.</p>
 
 <h3 class="function"><a name="xor8-2">xor8/2</a></h3>
 <div class="spec">
-<p><tt>xor8(List::list(), HashFunction::atom() | function()) -&gt; {reference(), atom() | function()} | {error, atom()}</tt><br></p>
+<p><tt>xor8(List::list(), HashFunction::<a href="#type-hash_function">hash_function()</a>) -&gt; {reference(), <a href="#type-hash_function">hash_function()</a>} | {error, atom()}</tt><br></p>
 </div><p><p>Initializes the xor filter, and runs the specified pre-defined  
 hash function on each of the elements.</p>
  
@@ -197,7 +200,7 @@ if a predefined hash function is specified.</p>
 
 <h3 class="function"><a name="xor8_buffered-2">xor8_buffered/2</a></h3>
 <div class="spec">
-<p><tt>xor8_buffered(List::list(), HashFunction::atom() | function()) -&gt; {reference(), atom() | function()} | {error, atom()}</tt><br></p>
+<p><tt>xor8_buffered(List::list(), HashFunction::<a href="#type-hash_function">hash_function()</a>) -&gt; {reference(), <a href="#type-hash_function">hash_function()</a>} | {error, atom()}</tt><br></p>
 </div><p><p>Similar to the initialize function, but is a buffered version for lists  
 that are over 100,000,000 keys.  Use for greater speed.</p>
  
@@ -207,7 +210,7 @@ that are over 100,000,000 keys.  Use for greater speed.</p>
 
 <h3 class="function"><a name="xor8_contain-2">xor8_contain/2</a></h3>
 <div class="spec">
-<p><tt>xor8_contain(X1::{reference(), atom() | function()}, Key::term()) -&gt; true | false</tt><br></p>
+<p><tt>xor8_contain(X1::{reference(), <a href="#type-hash_function">hash_function()</a>}, Key::term()) -&gt; true | false</tt><br></p>
 </div><p><p>Tests to see if the passed argument is in the filter.  The first  
 argument must be the pre-initialized filter.</p>
  
@@ -220,7 +223,7 @@ is used to compute the hash.</p>
 
 <h3 class="function"><a name="xor8_contain-3">xor8_contain/3</a></h3>
 <div class="spec">
-<p><tt>xor8_contain(X1::{reference(), atom() | function()}, Key::term(), ReturnValue::any()) -&gt; true | any()</tt><br></p>
+<p><tt>xor8_contain(X1::{reference(), <a href="#type-hash_function">hash_function()</a>}, Key::term(), ReturnValue::any()) -&gt; true | any()</tt><br></p>
 </div><p><p>Tests to see if the passed argument is in the filter.  The first  
 argument must be the pre-initialized filter.</p>
  
@@ -230,18 +233,17 @@ argument must be the pre-initialized filter.</p>
 
 <h3 class="function"><a name="xor8_from_bin-1">xor8_from_bin/1</a></h3>
 <div class="spec">
-<p><tt>xor8_from_bin(Bin) -&gt; any()</tt></p>
-</div>
-
-<h3 class="function"><a name="xor8_from_bin-2">xor8_from_bin/2</a></h3>
-<div class="spec">
-<p><tt>xor8_from_bin(Bin, Hash) -&gt; any()</tt></p>
-</div>
+<p><tt>xor8_from_bin(X1::{binary(), <a href="#type-hash_function">hash_function()</a>}) -&gt; {reference(), <a href="#type-hash_function">hash_function()</a>}</tt><br></p>
+</div><p><p>Deserialize the filter from a previous <code>xor8_to_bin</code> call.</p>
+ 
+  Returns <code>{reference(), hash_function()}</code></p>
 
 <h3 class="function"><a name="xor8_to_bin-1">xor8_to_bin/1</a></h3>
 <div class="spec">
-<p><tt>xor8_to_bin(X1) -&gt; any()</tt></p>
-</div>
+<p><tt>xor8_to_bin(X1::{reference(), <a href="#type-hash_function">hash_function()</a>}) -&gt; {binary(), <a href="#type-hash_function">hash_function()</a>}</tt><br></p>
+</div><p><p>Serialize the filter to a binary</p>
+ 
+  Returns <code>binary()</code>.</p>
 <hr>
 
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>

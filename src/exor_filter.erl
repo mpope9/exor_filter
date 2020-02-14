@@ -58,19 +58,26 @@
    xor8_buffered/2,
    xor8_contain/2,
    xor8_contain/3,
+   xor8_to_bin/1,
+   xor8_from_bin/1,
 
    xor16/1,
    xor16/2,
    xor16_buffered/1,
    xor16_buffered/2,
    xor16_contain/2,
-   xor16_contain/3
+   xor16_contain/3,
+   xor16_to_bin/1,
+   xor16_from_bin/1
 ]).
 -on_load(init/0).
 
 -define(APPNAME, exor_filter).
 -define(LIBNAME, exor_filter).
 
+-type hash_function() :: default_hash | none | fun((any()) -> non_neg_integer()).
+
+-export_type([hash_function/0]).
 
 %%-----------------------------------------------------------------------------
 %% @doc Initializes the xor filter, and runs the default hash function on
@@ -116,8 +123,8 @@ xor8(List) ->
 %% Otherwise, an `{error, reason}' be returned.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor8(list(), atom() | fun()) -> 
-   {reference(), atom() | fun()} | {error, atom()}.
+-spec xor8(list(), hash_function()) -> 
+   {reference(), hash_function()} | {error, atom()}.
 
 xor8(List, HashFunction) ->
    initialize_filter(List, HashFunction, xor8).
@@ -143,8 +150,8 @@ xor8_buffered(List) ->
 %% Returns a `Ref<>' to a filter to be used in `contain'.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor8_buffered(list(), atom() | fun()) 
-   -> {reference(), atom() | fun()} | {error, atom()}.
+-spec xor8_buffered(list(), hash_function()) 
+   -> {reference(), hash_function()} | {error, atom()}.
 
 xor8_buffered(List, HashFunction) ->
    initialize_filter(List, HashFunction, xor8_buffered).
@@ -167,8 +174,8 @@ xor16(List) ->
 %% See the xor8/2 documentation.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor16(list(), atom() | fun()) 
-   -> {reference(), atom() | fun()} | {error, atom()}.
+-spec xor16(list(), hash_function()) 
+   -> {reference(), hash_function()} | {error, atom()}.
 
 xor16(List, HashFunction) ->
    initialize_filter(List, HashFunction, xor16).
@@ -194,8 +201,8 @@ xor16_buffered(List) ->
 %% Returns a `Ref<>' to a filter to be used in `contain'.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor16_buffered(list(), atom() | fun()) 
-   -> {reference(), atom() | fun()} | {error, atom()}.
+-spec xor16_buffered(list(), hash_function()) 
+   -> {reference(), hash_function()} | {error, atom()}.
 
 xor16_buffered(List, HashFunction) ->
    initialize_filter(List, HashFunction, xor16_buffered).
@@ -239,8 +246,8 @@ initialize_filter(_, _, _) ->
 %% checking.  Use with caution.
 %% @end
 %%-----------------------------------------------------------------------------
--spec nif_wrapper(list(), atom() | fun(), atom()) 
-   -> {error, atom()} | {reference(), atom()} | {reference(), fun()}.
+-spec nif_wrapper(list(), hash_function(), atom()) 
+   -> {error, atom()} | {reference(), hash_function()}.
 nif_wrapper(List, HashFunction, FilterType) ->
 
    case filter_selector(List, FilterType) of
@@ -362,7 +369,7 @@ xor8_buffered_initialize_nif_dirty(_) ->
 %% False if not.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor8_contain({reference(), atom() | fun()}, term()) -> true | false.
+-spec xor8_contain({reference(), hash_function()}, term()) -> true | false.
 
 xor8_contain({Filter, default_hash}, Key) ->
     xor8_contain_nif(Filter, erlang:phash2(Key));
@@ -383,7 +390,7 @@ xor8_contain({Filter, _HashFunction}, Key) ->
 %% not in the filter.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor8_contain({reference(), atom() | fun()}, term(), any())
+-spec xor8_contain({reference(), hash_function()}, term(), any())
    -> true | any().
 
 xor8_contain({Filter, default_hash}, Key, ReturnValue) ->
@@ -419,6 +426,37 @@ xor8_contain({Filter, _HashFunction}, Key, ReturnValue) ->
 xor8_contain_nif(_, _) ->
    not_loaded(?LINE).
 
+
+%%-----------------------------------------------------------------------------
+%% @doc Serialize the filter to a binary
+%%
+%% Returns `binary()'.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor8_to_bin({reference(), hash_function()}) -> {binary(), hash_function()}.
+
+xor8_to_bin({Filter, Hash}) ->
+    {xor8_to_bin_nif(Filter), Hash}.
+
+%% @private
+xor8_to_bin_nif(_) ->
+   not_loaded(?LINE).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Deserialize the filter from a previous `xor8_to_bin' call.
+%%
+%% Returns `{reference(), hash_function()}'
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor8_from_bin({binary(), hash_function()}) -> {reference(), hash_function()}.
+
+xor8_from_bin({Bin, Hash}) ->
+    {xor8_from_bin_nif(Bin), Hash}.
+
+%% @private
+xor8_from_bin_nif(_) ->
+   not_loaded(?LINE).
 
 %%-----------------------------------------------------------------------------
 %% @doc Nif api.  Initializes the xor filter on a passed list.  
@@ -482,7 +520,7 @@ xor16_buffered_initialize_nif_dirty(_) ->
 %% Returns true if the element exists (or if there is a false positive).
 %% False if not.
 %% @end
--spec xor16_contain({reference(), atom() | fun()}, term()) -> true | false.
+-spec xor16_contain({reference(), hash_function()}, term()) -> true | false.
 
 xor16_contain({Filter, default_hash}, Key) ->
     xor16_contain_nif(Filter, erlang:phash2(Key));
@@ -502,7 +540,7 @@ xor16_contain({Filter, _HashFunction}, Key) ->
 %% The third argument will be returned instead of `false' if the element is
 %% not in the filter.
 %% @end
--spec xor16_contain({reference(), atom() | fun()}, term(), any())
+-spec xor16_contain({reference(), hash_function()}, term(), any())
    -> true | any().
 
 xor16_contain({Filter, default_hash}, Key, ReturnValue) ->
@@ -536,6 +574,37 @@ xor16_contain({Filter, _HashFunction}, Key, ReturnValue) ->
 -spec xor16_contain_nif(reference(), term()) -> true | false.
 
 xor16_contain_nif(_, _) ->
+   not_loaded(?LINE).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Serialize the filter to a binary
+%%
+%% Returns `binary()'.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor16_to_bin({reference(), hash_function()}) -> {binary(), hash_function()}.
+
+xor16_to_bin({Filter, Hash}) ->
+    {xor16_to_bin_nif(Filter), Hash}.
+
+%% @private
+xor16_to_bin_nif(_) ->
+   not_loaded(?LINE).
+
+%%-----------------------------------------------------------------------------
+%% @doc Deserialize the filter from a previous `xor16_to_bin' call.
+%%
+%% Returns `{reference(), hash_function()}'
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor16_from_bin({binary(), hash_function()}) -> {reference(), hash_function()}.
+
+xor16_from_bin({Bin, Hash}) ->
+    {xor16_from_bin_nif(Bin), Hash}.
+
+%% @private
+xor16_from_bin_nif(_) ->
    not_loaded(?LINE).
 
 

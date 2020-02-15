@@ -1,6 +1,9 @@
 #include <stdint.h>
 #include <string.h>
 #include "erl_nif.h"
+
+#define malloc(size) enif_alloc(size)
+#define free(size) enif_free(size)
 #include "xorfilter.h"
 
 static ErlNifResourceType* xor8_resource_type;
@@ -174,7 +177,11 @@ xor8_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffere
 
    enif_free(value_list);
 
-   return enif_make_resource(env, filter);
+   ERL_NIF_TERM res = enif_make_resource(env, filter);
+   // release this resource now its owned by Erlang
+   enif_release_resource(filter);
+   return res;
+
 }
 
 static ERL_NIF_TERM
@@ -285,7 +292,10 @@ xor8_from_bin_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
    filter->fingerprints = enif_alloc(filter->blockLength * 3);
    memcpy(filter->fingerprints, bin.data+(sizeof(uint64_t) * 2), filter->blockLength * 3);
 
-   return  enif_make_resource(env, filter);
+   ERL_NIF_TERM res = enif_make_resource(env, filter);
+   // release this resource now its owned by Erlang
+   enif_release_resource(filter);
+   return res;
 }
 
 
@@ -358,7 +368,10 @@ xor16_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffer
 
    enif_free(value_list);
 
-   return enif_make_resource(env, filter);
+   ERL_NIF_TERM res = enif_make_resource(env, filter);
+   // release this resource now its owned by Erlang
+   enif_release_resource(filter);
+   return res;
 }
 
 static ERL_NIF_TERM
@@ -472,7 +485,10 @@ xor16_from_bin_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
    filter->fingerprints = enif_alloc(filter->blockLength * sizeof(uint16_t) * 3);
    memcpy(filter->fingerprints, bin.data+(sizeof(uint64_t) * 2), filter->blockLength * sizeof(uint16_t) * 3);
 
-   return  enif_make_resource(env, filter);
+   ERL_NIF_TERM res = enif_make_resource(env, filter);
+   // release this resource now its owned by Erlang
+   enif_release_resource(filter);
+   return res;
 }
 
 static int

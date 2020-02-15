@@ -1,6 +1,9 @@
 #include <stdint.h>
 #include <string.h>
 #include "erl_nif.h"
+
+#define malloc(size) enif_alloc(size)
+#define free(size) enif_free(size)
 #include "xorfilter.h"
 
 static ErlNifResourceType* xor8_resource_type;
@@ -153,7 +156,11 @@ xor8_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffere
 
    enif_free(value_list);
 
-   return enif_make_resource(env, filter);
+   ERL_NIF_TERM res = enif_make_resource(env, filter);
+   // release this resource now its owned by Erlang
+   enif_release_resource(filter);
+   return res;
+
 }
 
 static ERL_NIF_TERM
@@ -270,7 +277,10 @@ xor16_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffer
 
    enif_free(value_list);
 
-   return enif_make_resource(env, filter);
+   ERL_NIF_TERM res = enif_make_resource(env, filter);
+   // release this resource now its owned by Erlang
+   enif_release_resource(filter);
+   return res;
 }
 
 static ERL_NIF_TERM

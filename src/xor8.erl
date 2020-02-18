@@ -84,9 +84,11 @@ new_buffered(List, HashFunction) ->
 %%-----------------------------------------------------------------------------
 %% @doc Tests to see if the passed argument is in the filter.  The first
 %% argument must be the pre-initialized filter.
+%%
+%% A filter previously serialized by `to_bin' is allowed
 %% @end
 %%-----------------------------------------------------------------------------
--spec contain({reference(), exor_filter:hash_function()}, term()) -> true | false.
+-spec contain({reference() | binary(), exor_filter:hash_function()}, term()) -> true | false.
 
 contain(Filter, Key) ->
     exor_filter:xor8_contain(Filter, Key).
@@ -96,10 +98,12 @@ contain(Filter, Key) ->
 %% @doc Tests to see if the passed argument is in the filter.  The first
 %% argument must be the pre-initialized filter.
 %%
+%% A filter previously serialized by `to_bin' is allowed
+%%
 %% Will return the third argument if the element doesn't exist in the filter.
 %% @end
 %%-----------------------------------------------------------------------------
--spec contain({reference(), exor_filter:hash_function()}, term(), any()) -> true | any().
+-spec contain({reference() | binary(), exor_filter:hash_function()}, term(), any()) -> true | any().
 
 contain(Filter, Key, ReturnValue) ->
     exor_filter:xor8_contain(Filter, Key, ReturnValue).

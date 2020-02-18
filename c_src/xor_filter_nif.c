@@ -205,16 +205,43 @@ xor8_contain_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
       return enif_make_badarg(env);
    }
 
-   xor8_t* filter;
-   if(!enif_get_resource(env, argv[0], xor8_resource_type, (void**) &filter)) 
-   {
-      return mk_error(env, "get_filter_for_contains_error");
-   }
-
    ErlNifUInt64 key;
    if(!enif_get_uint64(env, argv[1], &key)) 
    {
       return mk_error(env, "get_key_for_contains_error");
+   }
+
+
+
+   xor8_t* filter;
+   if(!enif_get_resource(env, argv[0], xor8_resource_type, (void**) &filter)) 
+   {
+       ErlNifBinary bin;
+       if (!enif_inspect_binary(env, argv[0], &bin)) {
+           return mk_error(env, "get_filter_for_contains_error");
+       }
+
+       if (bin.size < sizeof(uint64_t) * 2) {
+           return mk_error(env, "get_filter_for_contains_bin_wrong_size");
+       }
+
+       xor8_t stack_filter;
+
+       unpack_le_u64(&stack_filter.seed, bin.data);
+       unpack_le_u64(&stack_filter.blockLength, bin.data+sizeof(uint64_t));
+
+       if (bin.size != (sizeof(uint64_t)*2) + (stack_filter.blockLength * 3)) {
+           return mk_error(env, "get_filter_for_contains_bin_wrong_size");
+       }
+       stack_filter.fingerprints = bin.data + (sizeof(uint64_t) * 2);
+       if(xor8_contain(key, &stack_filter))
+       {
+           return mk_atom(env, "true");
+       }
+       else
+       {
+           return mk_atom(env, "false");
+       }
    }
 
    if(xor8_contain(key, filter)) 
@@ -225,8 +252,6 @@ xor8_contain_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
    {
       return mk_atom(env, "false");
    }
-
-   return mk_atom(env, "false");
 }
 
 static ERL_NIF_TERM
@@ -395,17 +420,42 @@ xor16_contain_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
       return enif_make_badarg(env);
    }
 
-   xor16_t* filter;
-   if(!enif_get_resource(env, argv[0], xor16_resource_type, (void**) &filter)) 
-   {
-      return mk_error(env, "get_filter_for_contains_error");
-   }
-
    ErlNifUInt64 key;
    // Hash the values or not.
    if(!enif_get_uint64(env, argv[1], &key)) 
    {
       return mk_error(env, "get_key_for_contains_error");
+   }
+
+   xor16_t* filter;
+   if(!enif_get_resource(env, argv[0], xor16_resource_type, (void**) &filter)) 
+   {
+       ErlNifBinary bin;
+       if (!enif_inspect_binary(env, argv[0], &bin)) {
+           return mk_error(env, "get_filter_for_contains_error");
+       }
+
+       if (bin.size < sizeof(uint64_t) * 2) {
+           return mk_error(env, "get_filter_for_contains_bin_wrong_size");
+       }
+
+       xor16_t stack_filter;
+
+       unpack_le_u64(&stack_filter.seed, bin.data);
+       unpack_le_u64(&stack_filter.blockLength, bin.data+sizeof(uint64_t));
+
+       if (bin.size != (sizeof(uint64_t)*2) + (stack_filter.blockLength * sizeof(uint16_t) * 3)) {
+           return mk_error(env, "get_filter_for_contains_bin_wrong_size");
+       }
+       stack_filter.fingerprints = (uint16_t *) (bin.data + (sizeof(uint64_t) * 2));
+       if(xor16_contain(key, &stack_filter))
+       {
+           return mk_atom(env, "true");
+       }
+       else
+       {
+           return mk_atom(env, "false");
+       }
    }
 
    if(xor16_contain(key, filter)) 
@@ -416,8 +466,6 @@ xor16_contain_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
    {
       return mk_atom(env, "false");
    }
-
-   return mk_atom(env, "false");
 }
 
 static ERL_NIF_TERM

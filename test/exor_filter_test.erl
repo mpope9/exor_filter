@@ -31,8 +31,6 @@ basic_test_() ->
           ?_test(xor8_contain_key_not_uint64()),
           ?_test(xor8_contain_custom_key_not_uint64()),
           ?_test(xor8_valid_filter_in_contain()),
-          ?_test(xor8_valid_filter_in_free()),
-          ?_test(xor8_cannot_free_twice()),
           ?_test(xor8_large()),
           ?_test(xor8_large_buffered()),
           ?_test(xor8_medium_default(Strings)),
@@ -59,8 +57,6 @@ basic_test_() ->
           ?_test(xor16_contain_key_not_uint64()),
           ?_test(xor16_contain_custom_key_not_uint64()),
           ?_test(xor16_valid_filter_in_contain()),
-          ?_test(xor16_valid_filter_in_free()),
-          ?_test(xor16_cannot_free_twice()),
           ?_test(xor16_large()),
           ?_test(xor16_large_buffered()),
           ?_test(xor16_medium_default(Strings)),
@@ -73,14 +69,12 @@ basic_test_() ->
 xor8_filter() ->
    Filter = xor8:new(["test1", "test2", "test3"]),
    ?_assertEqual(true, xor8:contain(Filter, "test1")),
-   ?_assertEqual(false, xor8:contain(Filter, "test4")),
-   xor8:free(Filter).
+   ?_assertEqual(false, xor8:contain(Filter, "test4")).
 
 xor8_buffered_filter() ->
    Filter = xor8:new_buffered(["test1", "test2", "test3"]),
    ?_assertEqual(true, xor8:contain(Filter, "test2")),
-   ?_assertEqual(false, xor8:contain(Filter, "test6")),
-   xor8:free(Filter).
+   ?_assertEqual(false, xor8:contain(Filter, "test6")).
 
 xor8_non_uint64() ->
    ?assertEqual({error, convert_to_uint64_t_error}, 
@@ -111,15 +105,13 @@ xor8_valid_hash() ->
    Fun = fun(X) -> X + 1 end,
    Filter = xor8:new([1, 2, 3], Fun),
    ?_assertEqual(true, xor8:contain(Filter, 4)),
-   ?_assertEqual(false, xor8:contain(Filter, 1)),
-   xor8:free(Filter).
+   ?_assertEqual(false, xor8:contain(Filter, 1)).
 
 xor8_valid_hash_buffered() ->
    Fun = fun(X) -> X + 1 end,
    Filter = xor8:new_buffered([1, 2, 3], Fun),
    ?_assertEqual(true, xor8:contain(Filter, 4)),
-   ?_assertEqual(false, xor8:contain(Filter, 1)),
-   xor8:free(Filter).
+   ?_assertEqual(false, xor8:contain(Filter, 1)).
 
 xor8_wrong_hash_arity() ->
    Fun = fun(X, Y) -> X + Y end,
@@ -144,75 +136,57 @@ xor8_hash_does_not_return_uint64_buffered() ->
 xor8_custom_contain_return() ->
    Filter = xor8:new([1, 2, 3]),
    ?_assertEqual(true, xor8:contain(Filter, 2, asdf)),
-   ?_assertEqual(asdf, xor8:contain(Filter, 6, asdf)),
-   xor8:free(Filter).
+   ?_assertEqual(asdf, xor8:contain(Filter, 6, asdf)).
 
 xor8_contain_hash_function_custom_return() ->
    Fun = fun(X) -> X + 1 end,
    Filter = xor8:new([1, 2, 3], Fun),
    ?_assertEqual(true, xor8:contain(Filter, 2)),
    ?_assertEqual({error, reason}, 
-      xor8:contain(Filter, 1, {error, reason})),
-   xor8:free(Filter).
+      xor8:contain(Filter, 1, {error, reason})).
 
 xor8_contain_key_not_uint64() ->
    Filter = xor8:new([1, 2, 3], none),
    ?_assertEqual({error, get_key_for_contains_error}, 
-      xor8:contain(Filter, "test")),
-   xor8:free(Filter).
+      xor8:contain(Filter, "test")).
 
 xor8_contain_custom_key_not_uint64() ->
    Filter = xor8:new([1, 2, 3]),
    ?_assertEqual({error, get_key_for_contains_error}, 
-      xor8:contain(Filter, "test", asdf)),
-   xor8:free(Filter).
+      xor8:contain(Filter, "test", asdf)).
 
 xor8_valid_filter_in_contain() ->
    ?_assertEqual({error, get_key_for_contains_error}, 
       xor8:contain(asdf, 1)).
 
-xor8_valid_filter_in_free() ->
-   ?_assertEqual(ok, xor8:free(asdf)).
-
-xor8_cannot_free_twice() ->
-   Filter = xor8:new([1, 2, 3]),
-   ?_assertEqual(ok, xor8:free(Filter)),
-   ?_assertEqual(ok, xor8:free(Filter)).
-
 xor8_large() ->
    X = lists:seq(1, 10000000),
    Filter = xor8:new(X, none),
-   ?_assertEqual(true, xor8:contain(Filter, 100)),
-   xor8:free(Filter).
+   ?_assertEqual(true, xor8:contain(Filter, 100)).
 
 xor8_large_buffered() ->
    X = lists:seq(1, 10000000),
    Filter = xor8:new_buffered(X, none),
-   ?_assertEqual(true, xor8:contain(Filter, 100)),
-   xor8:free(Filter).
+   ?_assertEqual(true, xor8:contain(Filter, 100)).
 
 xor8_medium_default(Strings) ->
    Filter = xor8:new(Strings),
-   ?_assertEqual(true, xor8:contain(Filter, "test100")),
-   xor8:free(Filter).
+   ?_assertEqual(true, xor8:contain(Filter, "test100")).
 
 xor8_medium_default_buffered(Strings) ->
    Filter = xor8:new_buffered(Strings),
-   ?_assertEqual(true, xor8:contain(Filter, "test100")),
-   xor8:free(Filter).
+   ?_assertEqual(true, xor8:contain(Filter, "test100")).
 
 %% Begin xor16 tests.
 xor16_filter() ->
    Filter = xor16:new(["test1", "test2", "test3"]),
    ?_assertEqual(true, xor16:contain(Filter, "test1")),
-   ?_assertEqual(false, xor16:contain(Filter, "test4")),
-   xor16:free(Filter).
+   ?_assertEqual(false, xor16:contain(Filter, "test4")).
 
 xor16_buffered_filter() ->
    Filter = xor16:new_buffered(["test1", "test2", "test3"]),
    ?_assertEqual(true, xor16:contain(Filter, "test2")),
-   ?_assertEqual(false, xor16:contain(Filter, "test6")),
-   xor16:free(Filter).
+   ?_assertEqual(false, xor16:contain(Filter, "test6")).
 
 xor16_non_uint64() ->
    ?assertEqual({error, convert_to_uint64_t_error}, 
@@ -243,15 +217,13 @@ xor16_valid_hash() ->
    Fun = fun(X) -> X + 1 end,
    Filter = xor16:new([1, 2, 3], Fun),
    ?_assertEqual(true, xor16:contain(Filter, 4)),
-   ?_assertEqual(false, xor16:contain(Filter, 1)),
-   xor16:free(Filter).
+   ?_assertEqual(false, xor16:contain(Filter, 1)).
 
 xor16_valid_hash_buffered() ->
    Fun = fun(X) -> X + 1 end,
    Filter = xor16:new_buffered([1, 2, 3], Fun),
    ?_assertEqual(true, xor16:contain(Filter, 4)),
-   ?_assertEqual(false, xor16:contain(Filter, 1)),
-   xor16:free(Filter).
+   ?_assertEqual(false, xor16:contain(Filter, 1)).
 
 xor16_wrong_hash_arity() ->
    Fun = fun(X, Y) -> X + Y end,
@@ -276,61 +248,45 @@ xor16_hash_does_not_return_uint64_buffered() ->
 xor16_custom_contain_return() ->
    Filter = xor16:new([1, 2, 3]),
    ?_assertEqual(true, xor16:contain(Filter, 2, asdf)),
-   ?_assertEqual(asdf, xor16:contain(Filter, 6, asdf)),
-   xor16:free(Filter).
+   ?_assertEqual(asdf, xor16:contain(Filter, 6, asdf)).
 
 xor16_contain_hash_function_custom_return() ->
    Fun = fun(X) -> X + 1 end,
    Filter = xor16:new([1, 2, 3], Fun),
    ?_assertEqual(true, xor16:contain(Filter, 2)),
    ?_assertEqual({error, reason}, 
-      xor16:contain(Filter, 1, {error, reason})),
-   xor16:free(Filter).
+      xor16:contain(Filter, 1, {error, reason})).
 
 xor16_contain_key_not_uint64() ->
    Filter = xor16:new([1, 2, 3], none),
    ?_assertEqual({error, get_key_for_contains_error}, 
-      xor16:contain(Filter, "test")),
-   xor16:free(Filter).
+      xor16:contain(Filter, "test")).
 
 xor16_contain_custom_key_not_uint64() ->
    Filter = xor16:new([1, 2, 3]),
    ?_assertEqual({error, get_key_for_contains_error}, 
-      xor16:contain(Filter, "test", asdf)),
-   xor16:free(Filter).
+      xor16:contain(Filter, "test", asdf)).
 
 xor16_valid_filter_in_contain() ->
    ?_assertEqual({error, get_key_for_contains_error}, 
       xor16:contain(asdf, 1)).
 
-xor16_valid_filter_in_free() ->
-   ?_assertEqual(ok, xor16:free(asdf)).
-
-xor16_cannot_free_twice() ->
-   Filter = xor16:new([1, 2, 3]),
-   ?_assertEqual(ok, xor16:free(Filter)),
-   ?_assertEqual(ok, xor16:free(Filter)).
-
 xor16_large() ->
    X = lists:seq(1, 10000000),
    Filter = xor16:new(X, none),
-   ?_assertEqual(true, xor16:contain(Filter, 100)),
-   xor16:free(Filter).
+   ?_assertEqual(true, xor16:contain(Filter, 100)).
 
 xor16_large_buffered() ->
    X = lists:seq(1, 10000000),
    Filter = xor16:new_buffered(X, none),
-   ?_assertEqual(true, xor16:contain(Filter, 100)),
-   xor16:free(Filter).
+   ?_assertEqual(true, xor16:contain(Filter, 100)).
 
 xor16_medium_default(Strings) ->
    Filter = xor16:new(Strings),
-   ?_assertEqual(true, xor16:contain(Filter, "test100")),
-   xor16:free(Filter).
+   ?_assertEqual(true, xor16:contain(Filter, "test100")).
 
 xor16_medium_default_buffered(Strings) ->
    Filter = xor16:new_buffered(Strings),
-   ?_assertEqual(true, xor16:contain(Filter, "test100")),
-   xor16:free(Filter).
+   ?_assertEqual(true, xor16:contain(Filter, "test100")).
 
 %% EOF

@@ -14,7 +14,6 @@
 %% Filter = exor_filter:xor8(["test1", "test2", "test3"]),
 %% true   = exor_filter:xor8_contain(Filter, "test1"),
 %% false  = exor_filter:xor8_contain(Filter, "test6"),
-%% ok     = exor_filter:xor8_free(Filter).
 %% '''
 %%
 %% Filters are initialized independently:
@@ -27,8 +26,6 @@
 %% false   = exor_filter:xor8_contain(Filter2, 2),
 %% true    = exor_filter:xor8_contain(Filter2, 5),
 %% 
-%% ok      = exor_filter:xor8_free(Filter1),
-%% ok      = exor_filter:xor8_free(Filter2).
 %% '''
 %%
 %% Example usage from Elixir:
@@ -49,7 +46,7 @@
 %% The buffered versions of initialize are provided for larger data sets.
 %% This can be faster.  See xor8_buffered/1 for more information.
 %%
-%% Convinience modules `xor8` and `xor16` are provided.
+%% Convinience modules `xor8' and `xor16' are provided.
 %% @end
 %%-----------------------------------------------------------------------------
 -module(exor_filter).
@@ -61,15 +58,13 @@
    xor8_buffered/2,
    xor8_contain/2,
    xor8_contain/3,
-   xor8_free/1,
 
    xor16/1,
    xor16/2,
    xor16_buffered/1,
    xor16_buffered/2,
    xor16_contain/2,
-   xor16_contain/3,
-   xor16_free/1
+   xor16_contain/3
 ]).
 -on_load(init/0).
 
@@ -114,7 +109,7 @@ xor8(List) ->
 %% '''
 %%
 %% Returns a {`Ref<>', hash_method} to a filter to be used in `contain' 
-%% and `free', if a predefined hash function is specified.
+%% if a predefined hash function is specified.
 %%
 %% Returns a {`Ref<>', hash_function()} if a custom function is passed.
 %%
@@ -145,7 +140,7 @@ xor8_buffered(List) ->
 %%
 %% See xor8/1 for example usage.
 %% 
-%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% Returns a `Ref<>' to a filter to be used in `contain'.
 %% @end
 %%-----------------------------------------------------------------------------
 -spec xor8_buffered(list(), atom() | fun()) 
@@ -196,7 +191,7 @@ xor16_buffered(List) ->
 %%
 %% See xor16/1 for example usage.
 %% 
-%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% Returns a `Ref<>' to a filter to be used in `contain'.
 %% @end
 %%-----------------------------------------------------------------------------
 -spec xor16_buffered(list(), atom() | fun()) 
@@ -306,7 +301,7 @@ filter_selector(List, xor16_buffered) ->
 %% @doc Nif api.  Initializes the xor filter on a passed list.  
 %% If the list isn't a list of 64 unsigned numbers, an error will be thrown.
 %% 
-%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% Returns a `Ref<>' to a filter to be used in `contain'.
 %% @end
 %%-----------------------------------------------------------------------------
 -spec xor8_initialize_nif(list()) -> reference() | {error, atom()}.
@@ -320,7 +315,7 @@ xor8_initialize_nif(_) ->
 %% scheduler.
 %% If the list isn't a list of 64 unsigned numbers, an error will be thrown.
 %% 
-%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% Returns a `Ref<>' to a filter to be used in `contain'.
 %% @end
 %%-----------------------------------------------------------------------------
 -spec xor8_initialize_nif_dirty(list()) -> reference() | {error, atom()}.
@@ -333,7 +328,7 @@ xor8_initialize_nif_dirty(_) ->
 %% @doc Nif api.  Similar to the initialize function, but is a buffered 
 %% version for lists
 %%
-%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% Returns a `Ref<>' to a filter to be used in `contain'.
 %% @end
 %%-----------------------------------------------------------------------------
 -spec xor8_buffered_initialize_nif(list()) -> reference() | {error, atom()}.
@@ -346,7 +341,7 @@ xor8_buffered_initialize_nif(_) ->
 %% @doc Nif api.  Similar to the initialize function, but is a buffered, dirty
 %% version for large lists.
 %%
-%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% Returns a `Ref<>' to a filter to be used in `contain'.
 %% @end
 %%-----------------------------------------------------------------------------
 -spec xor8_buffered_initialize_nif_dirty(list()) -> reference() | {error, atom()}.
@@ -426,35 +421,10 @@ xor8_contain_nif(_, _) ->
 
 
 %%-----------------------------------------------------------------------------
-%% @doc Frees the memory of the filter.  These can be large structures, so it
-%% is recommended that this is called for cleanup.
-%%
-%% Returns `ok'.
-%% @end
-%%-----------------------------------------------------------------------------
--spec xor8_free({reference(), any()}) -> ok.
-
-xor8_free({Filter, _}) ->
-   xor8_free_nif(Filter).
-
-
-%%-----------------------------------------------------------------------------
-%% @doc Nif api.  Frees the memory of the filter.  
-%%
-%% Returns `ok'.
-%% @end
-%%-----------------------------------------------------------------------------
--spec xor8_free_nif(reference()) -> ok.
-
-xor8_free_nif(_) ->
-   not_loaded(?LINE).
-
-
-%%-----------------------------------------------------------------------------
 %% @doc Nif api.  Initializes the xor filter on a passed list.  
 %% If the list isn't a list of 64 unsigned numbers, an error will be thrown.
 %% 
-%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% Returns a `Ref<>' to a filter to be used in `contain''.
 %% @end
 %%-----------------------------------------------------------------------------
 -spec xor16_initialize_nif(list()) -> reference() | {error, atom()}.
@@ -467,7 +437,7 @@ xor16_initialize_nif(_) ->
 %% @doc Nif api.  Initializes the xor filter on a passed list, dirty version.
 %% If the list isn't a list of 64 unsigned numbers, an error will be thrown.
 %% 
-%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% Returns a `Ref<>' to a filter to be used in `contain'.
 %% @end
 %%-----------------------------------------------------------------------------
 -spec xor16_initialize_nif_dirty(list()) -> reference() | {error, atom()}.
@@ -480,7 +450,7 @@ xor16_initialize_nif_dirty(_) ->
 %% @doc Nif api.  Similar to the initialize function, but is a buffered 
 %% version for lists
 %%
-%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% Returns a `Ref<>' to a filter to be used in `contain'.
 %% @end
 %%-----------------------------------------------------------------------------
 -spec xor16_buffered_initialize_nif(list()) -> reference() | {error, atom()}.
@@ -493,7 +463,7 @@ xor16_buffered_initialize_nif(_) ->
 %% @doc Nif api.  Similar to the initialize function, but is a buffered , dirty
 %% version for lists
 %%
-%% Returns a `Ref<>' to a filter to be used in `contain' and `free'.
+%% Returns a `Ref<>' to a filter to be used in `contain'.
 %% @end
 %%-----------------------------------------------------------------------------
 -spec xor16_buffered_initialize_nif_dirty(list()) -> reference() | {error, atom()}.
@@ -566,31 +536,6 @@ xor16_contain({Filter, _HashFunction}, Key, ReturnValue) ->
 -spec xor16_contain_nif(reference(), term()) -> true | false.
 
 xor16_contain_nif(_, _) ->
-   not_loaded(?LINE).
-
-
-%%-----------------------------------------------------------------------------
-%% @doc Frees the memory of the filter.  These can be large structures, so it
-%% is recommended that this is called for cleanup.
-%%
-%% Returns `ok'.
-%% @end
-%%-----------------------------------------------------------------------------
--spec xor16_free({reference(), any()}) -> ok.
-
-xor16_free({Filter, _}) ->
-   xor16_free_nif(Filter).
-
-
-%%-----------------------------------------------------------------------------
-%% @doc Nif api.  Frees the memory of the filter.  
-%%
-%% Returns `ok'.
-%% @end
-%%-----------------------------------------------------------------------------
--spec xor16_free_nif(any()) -> no_return().
-
-xor16_free_nif(_) ->
    not_loaded(?LINE).
 
 

@@ -11,7 +11,6 @@
 %% Filter = xor16:new(["cat", "dog", "mouse"]),
 %% true   = xor16:contain(Filter, "cat"),
 %% false  = xor16:contain(Filter, "goose"),
-%% ok     = xor16:free(Filter).
 %% '''
 %% @end
 %%-----------------------------------------------------------------------------
@@ -23,8 +22,7 @@
     new_buffered/1,
     new_buffered/2,
     contain/2,
-    contain/3,
-    free/1
+    contain/3
 ]).
 
 %%-----------------------------------------------------------------------------
@@ -102,15 +100,3 @@ contain(Filter, Key) ->
 
 contain(Filter, Key, ReturnValue) ->
     exor_filter:xor16_contain(Filter, Key, ReturnValue).
-
-%%-----------------------------------------------------------------------------
-%% @doc Frees the memory of the filter.  These can be large structures, so it
-%% is recommended that this is called for cleanup.
-%%
-%% Returns `ok'.
-%% @end
-%%-----------------------------------------------------------------------------
--spec free({reference(), any()}) -> ok.
-
-free(Filter) ->
-    exor_filter:xor16_free(Filter).

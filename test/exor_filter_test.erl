@@ -34,7 +34,8 @@ basic_test_() ->
           ?_test(xor8_large()),
           ?_test(xor8_large_buffered()),
           ?_test(xor8_medium_default(Strings)),
-          ?_test(xor8_medium_default_buffered(Strings))]
+          ?_test(xor8_medium_default_buffered(Strings)),
+          ?_test(xor8_serialization())]
       },
       {
          "xor16 Test Group",
@@ -60,7 +61,8 @@ basic_test_() ->
           ?_test(xor16_large()),
           ?_test(xor16_large_buffered()),
           ?_test(xor16_medium_default(Strings)),
-          ?_test(xor16_medium_default_buffered(Strings))]
+          ?_test(xor16_medium_default_buffered(Strings)),
+          ?_test(xor16_serialization())]
       }
    ].
 
@@ -177,6 +179,14 @@ xor8_medium_default_buffered(Strings) ->
    Filter = xor8:new_buffered(Strings),
    ?_assertEqual(true, xor8:contain(Filter, "test100")).
 
+xor8_serialization() ->
+   Filter = xor8:new(["test1", "test2", "test3"]),
+   ?_assertEqual(true, xor8:contain(Filter, "test1")),
+   ?_assertEqual(false, xor8:contain(Filter, "test4")),
+   Filter2 = xor8:from_bin(xor8:to_bin(Filter)),
+   ?_assertEqual(true, xor8:contain(Filter2, "test1")),
+   ?_assertEqual(false, xor8:contain(Filter2, "test4")).
+
 %% Begin xor16 tests.
 xor16_filter() ->
    Filter = xor16:new(["test1", "test2", "test3"]),
@@ -288,5 +298,14 @@ xor16_medium_default(Strings) ->
 xor16_medium_default_buffered(Strings) ->
    Filter = xor16:new_buffered(Strings),
    ?_assertEqual(true, xor16:contain(Filter, "test100")).
+
+xor16_serialization() ->
+   Filter = xor16:new(["test1", "test2", "test3"]),
+   ?_assertEqual(true, xor16:contain(Filter, "test1")),
+   ?_assertEqual(false, xor16:contain(Filter, "test4")),
+   Filter2 = xor16:from_bin(xor16:to_bin(Filter)),
+   ?_assertEqual(true, xor16:contain(Filter2, "test1")),
+   ?_assertEqual(false, xor16:contain(Filter2, "test4")).
+
 
 %% EOF

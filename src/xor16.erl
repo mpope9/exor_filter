@@ -22,7 +22,9 @@
     new_buffered/1,
     new_buffered/2,
     contain/2,
-    contain/3
+    contain/3,
+    to_bin/1,
+    from_bin/1
 ]).
 
 %%-----------------------------------------------------------------------------
@@ -45,8 +47,8 @@ new(List) ->
 %% A fun can be passed that will be applied to each element.
 %% @end
 %%-----------------------------------------------------------------------------
--spec new(list(), atom() | fun()) -> 
-   {reference(), atom() | fun()} | {error, atom()}.
+-spec new(list(), exor_filter:hash_function()) -> 
+   {reference(), exor_filter:hash_function()} | {error, atom()}.
 
 new(List, HashFunction) ->
     exor_filter:xor16(List, HashFunction).
@@ -71,8 +73,8 @@ new_buffered(List) ->
 %% for more indepth documentaiton.
 %% @end
 %%-----------------------------------------------------------------------------
--spec new_buffered(list(), atom() | fun()) 
-   -> {reference(), atom() | fun()} | {error, atom()}.
+-spec new_buffered(list(), exor_filter:hash_function()) 
+   -> {reference(), exor_filter:hash_function()} | {error, atom()}.
 
 new_buffered(List, HashFunction) ->
     exor_filter:xor16_buffered(List, HashFunction).
@@ -83,7 +85,7 @@ new_buffered(List, HashFunction) ->
 %% argument must be the pre-initialized filter.
 %% @end
 %%-----------------------------------------------------------------------------
--spec contain({reference(), atom() | fun()}, term()) -> true | false.
+-spec contain({reference(), exor_filter:hash_function()}, term()) -> true | false.
 
 contain(Filter, Key) ->
     exor_filter:xor16_contain(Filter, Key).
@@ -96,7 +98,32 @@ contain(Filter, Key) ->
 %% Will return the third argument if the element doesn't exist in the filter.
 %% @end
 %%-----------------------------------------------------------------------------
--spec contain({reference(), atom() | fun()}, term(), any()) -> true | any().
+-spec contain({reference(), exor_filter:hash_function()}, term(), any()) -> true | any().
 
 contain(Filter, Key, ReturnValue) ->
     exor_filter:xor16_contain(Filter, Key, ReturnValue).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Serializes the filter to a binary that can be later be deserialized with
+%% `from_bin/1'.
+%%
+%% Returns `{binary(), hash_function()}'.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec to_bin({reference(), exor_filter:hash_function()}) -> {binary(), exor_filter:hash_function()}.
+
+to_bin(Filter) ->
+    exor_filter:xor16_to_bin(Filter).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Deserializes a filter previously serialized with `to_bin'.
+%%
+%% @end
+%%-----------------------------------------------------------------------------
+-spec from_bin({binary(), exor_filter:hash_function()})
+    -> {reference(), exor_filter:hash_function()}.
+
+from_bin({Filter, Hash}) ->
+    exor_filter:xor16_from_bin({Filter, Hash}).

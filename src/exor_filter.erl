@@ -425,7 +425,7 @@ xor8_contain({Filter, _HashFunction}, Key, ReturnValue) ->
 %% Returns `false' if otherwise.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor8_contain_nif(reference(), term()) -> true | false.
+-spec xor8_contain_nif(reference() | binary(), term()) -> true | false.
 
 xor8_contain_nif(_, _) ->
    not_loaded(?LINE).
@@ -579,7 +579,7 @@ xor16_contain({Filter, _HashFunction}, Key, ReturnValue) ->
 %% Returns `false' if otherwise.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor16_contain_nif(reference(), term()) -> true | false.
+-spec xor16_contain_nif(reference() | binary(), term()) -> true | false.
 
 xor16_contain_nif(_, _) ->
    not_loaded(?LINE).

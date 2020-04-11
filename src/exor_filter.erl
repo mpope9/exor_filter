@@ -365,11 +365,13 @@ xor8_buffered_initialize_nif_dirty(_) ->
 %% The method / fun passed to the initialization function is saved, and 
 %% is used to compute the hash.
 %%
+%% Filters previously serialized with `xor8_to_bin' are allowed.
+%%
 %% Returns true if the element exists (or if there is a false positive).
 %% False if not.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor8_contain({reference(), hash_function()}, term()) -> true | false.
+-spec xor8_contain({reference() | binary(), hash_function()}, term()) -> true | false.
 
 xor8_contain({Filter, default_hash}, Key) ->
     xor8_contain_nif(Filter, erlang:phash2(Key));
@@ -385,12 +387,14 @@ xor8_contain({Filter, _HashFunction}, Key) ->
 %% @doc Tests to see if the passed argument is in the filter.  The first
 %% argument must be the pre-initialized filter.
 %%
+%% Filters previously serialized with `xor8_to_bin' are allowed.
+%%
 %% Returns `true' if the element exists (or there is a false positive).
 %% The third argument will be returned instead of `false' if the element is
 %% not in the filter.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor8_contain({reference(), hash_function()}, term(), any())
+-spec xor8_contain({reference() | binary(), hash_function()}, term(), any())
    -> true | any().
 
 xor8_contain({Filter, default_hash}, Key, ReturnValue) ->
@@ -421,7 +425,7 @@ xor8_contain({Filter, _HashFunction}, Key, ReturnValue) ->
 %% Returns `false' if otherwise.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor8_contain_nif(reference(), term()) -> true | false.
+-spec xor8_contain_nif(reference() | binary(), term()) -> true | false.
 
 xor8_contain_nif(_, _) ->
    not_loaded(?LINE).
@@ -517,10 +521,12 @@ xor16_buffered_initialize_nif_dirty(_) ->
 %% DO NOT PASS PRE-HASHED VALUES.  The method / fun passed to the 
 %% initialization function is saved, and is used to compute the hash.
 %%
+%% Filters previously serialized with `xor16_to_bin' are allowed.
+%%
 %% Returns true if the element exists (or if there is a false positive).
 %% False if not.
 %% @end
--spec xor16_contain({reference(), hash_function()}, term()) -> true | false.
+-spec xor16_contain({reference() | binary(), hash_function()}, term()) -> true | false.
 
 xor16_contain({Filter, default_hash}, Key) ->
     xor16_contain_nif(Filter, erlang:phash2(Key));
@@ -536,11 +542,13 @@ xor16_contain({Filter, _HashFunction}, Key) ->
 %% @doc Tests to see if the passed argument is in the filter.  The first
 %% argument must be the pre-initialized filter.
 %%
+%% Filters previously serialized with `xor16_to_bin' are allowed.
+%%
 %% Returns `true' if the element exists (or there is a false positive).
 %% The third argument will be returned instead of `false' if the element is
 %% not in the filter.
 %% @end
--spec xor16_contain({reference(), hash_function()}, term(), any())
+-spec xor16_contain({reference() | binary(), hash_function()}, term(), any())
    -> true | any().
 
 xor16_contain({Filter, default_hash}, Key, ReturnValue) ->
@@ -571,7 +579,7 @@ xor16_contain({Filter, _HashFunction}, Key, ReturnValue) ->
 %% Returns `false' if otherwise.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor16_contain_nif(reference(), term()) -> true | false.
+-spec xor16_contain_nif(reference() | binary(), term()) -> true | false.
 
 xor16_contain_nif(_, _) ->
    not_loaded(?LINE).

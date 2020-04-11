@@ -119,21 +119,25 @@ that are over 100,000,000 keys.  Use for greater speed.</p>
 
 <h3 class="function"><a name="xor16_contain-2">xor16_contain/2</a></h3>
 <div class="spec">
-<p><tt>xor16_contain(X1::{reference(), <a href="#type-hash_function">hash_function()</a>}, Key::term()) -&gt; true | false</tt><br></p>
+<p><tt>xor16_contain(X1::{reference() | binary(), <a href="#type-hash_function">hash_function()</a>}, Key::term()) -&gt; true | false</tt><br></p>
 </div><p><p>Tests to see if the passed argument is in the filter.  The first  
 argument must be the pre-initialized filter.</p>
  
   <p>DO NOT PASS PRE-HASHED VALUES.  The method / fun passed to the  
 initialization function is saved, and is used to compute the hash.</p>
  
+  <p>Filters previously serialized with <code>xor16_to_bin</code> are allowed.</p>
+ 
   Returns true if the element exists (or if there is a false positive).
   False if not.</p>
 
 <h3 class="function"><a name="xor16_contain-3">xor16_contain/3</a></h3>
 <div class="spec">
-<p><tt>xor16_contain(X1::{reference(), <a href="#type-hash_function">hash_function()</a>}, Key::term(), ReturnValue::any()) -&gt; true | any()</tt><br></p>
+<p><tt>xor16_contain(X1::{reference() | binary(), <a href="#type-hash_function">hash_function()</a>}, Key::term(), ReturnValue::any()) -&gt; true | any()</tt><br></p>
 </div><p><p>Tests to see if the passed argument is in the filter.  The first  
 argument must be the pre-initialized filter.</p>
+ 
+  <p>Filters previously serialized with <code>xor16_to_bin</code> are allowed.</p>
  
   Returns <code>true</code> if the element exists (or there is a false positive).
   The third argument will be returned instead of <code>false</code> if the element is
@@ -210,7 +214,7 @@ that are over 100,000,000 keys.  Use for greater speed.</p>
 
 <h3 class="function"><a name="xor8_contain-2">xor8_contain/2</a></h3>
 <div class="spec">
-<p><tt>xor8_contain(X1::{reference(), <a href="#type-hash_function">hash_function()</a>}, Key::term()) -&gt; true | false</tt><br></p>
+<p><tt>xor8_contain(X1::{reference() | binary(), <a href="#type-hash_function">hash_function()</a>}, Key::term()) -&gt; true | false</tt><br></p>
 </div><p><p>Tests to see if the passed argument is in the filter.  The first  
 argument must be the pre-initialized filter.</p>
  
@@ -218,14 +222,18 @@ argument must be the pre-initialized filter.</p>
 The method / fun passed to the initialization function is saved, and  
 is used to compute the hash.</p>
  
+  <p>Filters previously serialized with <code>xor8_to_bin</code> are allowed.</p>
+ 
   Returns true if the element exists (or if there is a false positive).
   False if not.</p>
 
 <h3 class="function"><a name="xor8_contain-3">xor8_contain/3</a></h3>
 <div class="spec">
-<p><tt>xor8_contain(X1::{reference(), <a href="#type-hash_function">hash_function()</a>}, Key::term(), ReturnValue::any()) -&gt; true | any()</tt><br></p>
+<p><tt>xor8_contain(X1::{reference() | binary(), <a href="#type-hash_function">hash_function()</a>}, Key::term(), ReturnValue::any()) -&gt; true | any()</tt><br></p>
 </div><p><p>Tests to see if the passed argument is in the filter.  The first  
 argument must be the pre-initialized filter.</p>
+ 
+  <p>Filters previously serialized with <code>xor8_to_bin</code> are allowed.</p>
  
   Returns <code>true</code> if the element exists (or there is a false positive).
   The third argument will be returned instead of <code>false</code> if the element is

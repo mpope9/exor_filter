@@ -36,6 +36,8 @@ defp deps do
 end
 ```
 
+Note, if you're using Erlang below version 23, then use this version of this library: `v0.5.2`.  Otherwise, use the latest version.
+
 ## Example Usage
 Basic usage with default hashing is as follows:
 ```erlang

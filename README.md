@@ -9,6 +9,28 @@ Be wary of memory usage when using this module.
 
 This library uses dirty nifs for initializing filters over 10K elements!  Make sure your environment is setup correctly.  Filters of 10M elements can be initialized within 4 seconds.  Within 2.5 seconds if the library is used unsafely.
 
+## Installation
+
+For rebar3:
+```erlang
+%% rebar.config
+
+{deps, [
+  {exor_filter, {git, "git://github.com/mpope9/exor_filter", {tag, "v0.5.2"}}}
+]}.
+```
+
+For Mix:
+```elixir
+## mix.exs
+
+defp deps do
+  [
+    {:exor_filter, github: "mpope9/exor_filter", tag: "v0.5.2"}
+  ]
+end
+```
+
 ## Example Usage
 Basic usage with default hashing is as follows:
 ```erlang
@@ -95,6 +117,15 @@ Filter1            = xor8:new(["Ricky Bobby", "Cal Naughton Jr."]),
 true               = xor8:contain(Filter1, "Ricky Bobby", {error, not_found}),
 {error, not_found} = xor8:contain(Filter1, "Reese Bobby", {error, not_found}),
 ok                 = xor8:free(Filter1).
+```
+
+## Serialization
+Functions are provided to the filter in binary form, instead of a nif reference.  This can be useful to interop with other platforms / systems.  The bin returned can be used with `contain` for ease of use.  Example usage:
+```erlang
+Filter                        = xor8:new(["test1", "test2", "test3"]),
+BinFilter                     = xor8:to_bin(Filter),
+{XorFilterBin, _HashFunction} = BinFilter,
+true                          = xor8:contain(BinFilter, "test1").
 ```
 
 ## xor16

@@ -9,6 +9,11 @@ Be wary of memory usage when using this module.
 
 This library uses dirty nifs for initializing filters over 10K elements!  Make sure your environment is setup correctly.  Filters of 10M elements can be initialized within 4 seconds.  Within 2.5 seconds if the library is used unsafely.
 
+## Benchmarks
+The [exor_benchmark](https://github.com/mpope9/exor_bechmark) repo was used to compare access times to popular bloom filter libraries.
+
+![Benchmark Graph](/images/results.png)
+
 ## Installation
 
 For rebar3:

@@ -35,7 +35,9 @@ basic_test_() ->
           ?_test(xor8_large_buffered()),
           ?_test(xor8_medium_default(Strings)),
           ?_test(xor8_medium_default_buffered(Strings)),
-          ?_test(xor8_serialization())]
+          ?_test(xor8_serialization()),
+          ?_test(xor8_incremental_builder()),
+          ?_test(xor8_cannot_use_incrament_in_contain())]
       },
       {
          "xor16 Test Group",
@@ -62,7 +64,9 @@ basic_test_() ->
           ?_test(xor16_large_buffered()),
           ?_test(xor16_medium_default(Strings)),
           ?_test(xor16_medium_default_buffered(Strings)),
-          ?_test(xor16_serialization())]
+          ?_test(xor16_serialization()),
+          ?_test(xor16_incremental_builder()),
+          ?_test(xor16_cannot_use_incrament_in_contain())]
       }
    ].
 
@@ -190,6 +194,19 @@ xor8_serialization() ->
    ?_assertEqual(true, xor8:contain(Filter2, "test1")),
    ?_assertEqual(false, xor8:contain(Filter2, "test4")).
 
+xor8_incremental_builder() ->
+   Filter0 = xor8:new_empty(2),
+   Filter1 = xor8:add(Filter0, [1, 2]),
+   Filter2 = xor8:add(Filter1, [3, 4]),
+   Filter3 = xor8:finalize(Filter2),
+   ?_assertEqual(true, xor8:contain(Filter3, 1)),
+   ?_assertEqual(false, xor8:contain(Filter3, 6)).
+
+xor8_cannot_use_incrament_in_contain() ->
+   Filter0 = xor8:new_empty(),
+   Filter1 = xor8:add(Filter0, [1, 2]),
+   ?_assertEqual({error, unfinalized_filter_error}, xor8:contain(Filter1, 1)).
+
 %% Begin xor16 tests.
 xor16_filter() ->
    Filter = xor16:new(["test1", "test2", "test3"]),
@@ -312,6 +329,19 @@ xor16_serialization() ->
    Filter2 = xor16:from_bin(BinFilter),
    ?_assertEqual(true, xor16:contain(Filter2, "test1")),
    ?_assertEqual(false, xor16:contain(Filter2, "test4")).
+
+xor16_incremental_builder() ->
+   Filter0 = xor16:new_empty(2),
+   Filter1 = xor16:add(Filter0, [1, 2]),
+   Filter2 = xor16:add(Filter1, [3, 4]),
+   Filter3 = xor16:finalize(Filter2),
+   ?_assertEqual(true, xor16:contain(Filter3, 1)),
+   ?_assertEqual(false, xor16:contain(Filter3, 6)).
+
+xor16_cannot_use_incrament_in_contain() ->
+   Filter0 = xor16:new_empty(),
+   Filter1 = xor16:add(Filter0, [1, 2]),
+   ?_assertEqual({error, unfinalized_filter_error}, xor16:contain(Filter1, 1)).
 
 
 %% EOF

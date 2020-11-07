@@ -21,6 +21,10 @@
     new/2,
     new_buffered/1,
     new_buffered/2,
+    new_empty/0,
+    new_empty/1,
+    add/2,
+    finalize/1,
     contain/2,
     contain/3,
     to_bin/1,
@@ -67,9 +71,56 @@ new_buffered(List) ->
 
 
 %%-----------------------------------------------------------------------------
+%% @doc Initializes an empty filter.  Can be filled incrementally, and is
+%% more memory efficient than storing entire data set in the Erlang VM.
+%% Initializes the filter to 64 elements, but will be dynamically expanded
+%% if more elements are added.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec new_empty() -> {builder, reference()}.
+
+new_empty() ->
+   new_empty(64).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Initializes an empty filter to the size passed.  Sizing of the filter 
+%% is flexible, but it is more efficient to pre-allocate the estimated size.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec new_empty(integer()) -> {builder, reference()}.
+
+new_empty(InitialSize) ->
+   exor_filter:exor_empty(InitialSize).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Adds elements to filter, and applys the default hashing mechanism.
+%% Dynamically re-sizes filter if needed.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec add({builder, reference()}, list()) -> {builder, reference()}.
+
+add(Filter, Elements) ->
+   exor_filter:exor_add(Filter, Elements).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Initializes filter internally, and frees data buffer.  Equivalent to
+%% calling `xor16:new'.
+%% Deduplication is not done, `finalize' will fail if duplicates are inserted.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec finalize({builder, reference()}) -> reference().
+
+finalize(Filter) ->
+   exor_filter:xor16_finalize(Filter).
+
+
+%%-----------------------------------------------------------------------------
 %% @doc Initializes the xor filter, and runs the default hash function on
 %% each of the elements in the list.  This is the buffered version, meant for
-%% large filters.  See the `xor8:new/2' or `exor_filter:xor8_new/2' funtions
+%% large filters.  See the `xor16:new/2' or `exor_filter:xor16_new/2' funtions
 %% for more indepth documentaiton.
 %% @end
 %%-----------------------------------------------------------------------------

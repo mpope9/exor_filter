@@ -245,26 +245,6 @@ xor16_buffered(List) ->
    xor16_buffered(List, default_hash).
  
 
-%-----------------------------------------------------------------------------
-%% @doc Fully initializes the filter, and frees the data.
-%% @end
-%%-----------------------------------------------------------------------------
--spec xor16_finalize({builder, reference()}) -> {reference(), hash_function()} | {error, atom()}.
-
-xor16_finalize({builder, Filter}) ->
-   {xor16_finalize_nif(Filter), default_hash}.
-
-
-%%-----------------------------------------------------------------------------
-%% @doc Nif api.
-%% @end
-%%-----------------------------------------------------------------------------
--spec xor16_finalize_nif(reference()) -> reference() | {error, atom()}.
-
-xor16_finalize_nif(_) ->
-   not_loaded(?LINE).
-
-
 %%-----------------------------------------------------------------------------
 %% @doc Similar to the initialize function, but is a buffered version for lists
 %% that are over 100,000,000 keys.  Use for greater speed.
@@ -477,8 +457,10 @@ xor8_contain({Filter, HashFunction}, Key) when is_function(HashFunction) ->
    xor8_contain_nif(Filter, HashFunction(Key));
 
 xor8_contain({Filter, _HashFunction}, Key) ->
-   xor8_contain_nif(Filter, Key).
+   xor8_contain_nif(Filter, Key);
 
+xor8_contain(_BadValue, _Key) ->
+   {error, get_key_for_contains_error}.
 
 %%-----------------------------------------------------------------------------
 %% @doc Tests to see if the passed argument is in the filter.  The first
@@ -498,15 +480,15 @@ xor8_contain({builder, _Filter}, _Key, _ReturnValue) ->
    {error, unfinalized_filter_error};
 
 xor8_contain({Filter, default_hash}, Key, ReturnValue) ->
-    xor8_contain({Filter, default_hash}, erlang:phash2(Key), ReturnValue);
+    xor8_contain(Filter, erlang:phash2(Key), ReturnValue);
 
 xor8_contain({Filter, HashFunction}, Key, ReturnValue) 
    when is_function(HashFunction) ->
    
    HashedKey = HashFunction(Key),
-   xor8_contain({Filter, HashFunction}, HashedKey, ReturnValue);
+   xor8_contain(Filter, HashedKey, ReturnValue);
 
-xor8_contain({Filter, _HashFunction}, Key, ReturnValue) ->
+xor8_contain(Filter, Key, ReturnValue) ->
 
    case xor8_contain_nif(Filter, Key) of
 
@@ -615,6 +597,26 @@ xor16_buffered_initialize_nif_dirty(_) ->
 
 
 %%-----------------------------------------------------------------------------
+%% @doc Fully initializes the filter, and frees the data.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor16_finalize({builder, reference()}) -> {reference(), hash_function()} | {error, atom()}.
+
+xor16_finalize({builder, Filter}) ->
+   {xor16_finalize_nif(Filter), default_hash}.
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Nif api.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor16_finalize_nif(reference()) -> reference() | {error, atom()}.
+
+xor16_finalize_nif(_) ->
+   not_loaded(?LINE).
+
+
+%%-----------------------------------------------------------------------------
 %% @doc Tests to see if the passed argument is in the filter.  The first
 %% argument must be the pre-initialized filter.
 %%
@@ -626,7 +628,11 @@ xor16_buffered_initialize_nif_dirty(_) ->
 %% Returns true if the element exists (or if there is a false positive).
 %% False if not.
 %% @end
--spec xor16_contain({reference() | binary(), hash_function()}, term()) -> true | false.
+-spec xor16_contain({reference() | binary(), hash_function()} | {builder, reference()}, term()) 
+   -> true | false | {error, unfinalized_filter_error}.
+
+xor16_contain({builder, _filter}, _Key) ->
+   {error, unfinalized_filter_error};
 
 xor16_contain({Filter, default_hash}, Key) ->
     xor16_contain_nif(Filter, erlang:phash2(Key));
@@ -635,7 +641,10 @@ xor16_contain({Filter, HashFunction}, Key) when is_function(HashFunction) ->
    xor16_contain_nif(Filter, HashFunction(Key));
 
 xor16_contain({Filter, _HashFunction}, Key) ->
-   xor16_contain_nif(Filter, Key).
+   xor16_contain_nif(Filter, Key);
+
+xor16_contain(_BadValue, _Key) ->
+   {error, get_key_for_contains_error}.
 
 
 %%-----------------------------------------------------------------------------
@@ -648,19 +657,22 @@ xor16_contain({Filter, _HashFunction}, Key) ->
 %% The third argument will be returned instead of `false' if the element is
 %% not in the filter.
 %% @end
--spec xor16_contain({reference() | binary(), hash_function()}, term(), any())
-   -> true | any().
+-spec xor16_contain({reference() | binary(), hash_function()} | {builder, reference()}, term(), any())
+   -> true | any() | {error, unfinalized_filter_error}.
+
+xor16_contain({builder, _Filter}, _Key, _ReturnValue) ->
+   {error, unfinalized_filter_error};
 
 xor16_contain({Filter, default_hash}, Key, ReturnValue) ->
-    xor16_contain({Filter, default_hash}, erlang:phash2(Key), ReturnValue);
+    xor16_contain(Filter, erlang:phash2(Key), ReturnValue);
 
 xor16_contain({Filter, HashFunction}, Key, ReturnValue) 
    when is_function(HashFunction) ->
    
    HashedKey = HashFunction(Key),
-   xor16_contain({Filter, HashFunction}, HashedKey, ReturnValue);
+   xor16_contain(Filter, HashedKey, ReturnValue);
 
-xor16_contain({Filter, _HashFunction}, Key, ReturnValue) ->
+xor16_contain(Filter, Key, ReturnValue) ->
 
    case xor16_contain_nif(Filter, Key) of
 

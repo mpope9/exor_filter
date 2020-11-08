@@ -47,7 +47,6 @@ destroy_exor_t_resource(ErlNifEnv* env, void* obj)
    {
       enif_free(filter->buffer);
    }
-   enif_free(filter);
 }
 
 void 
@@ -66,6 +65,19 @@ destroy_xor16_filter_resource(ErlNifEnv* env, void* obj)
    xor16_free(filter);
 }
 
+ErlNifResourceType*
+exor_t_resource_type_fun(ErlNifEnv* env)
+{
+   return enif_open_resource_type(
+      env,
+      NULL,
+      "exor_t_filter_resource",
+      destroy_exor_t_resource,
+      ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER,
+      NULL
+   );
+}
+
 ErlNifResourceType* 
 xor8_filter_resource_type(ErlNifEnv* env) 
 {
@@ -74,19 +86,6 @@ xor8_filter_resource_type(ErlNifEnv* env)
       NULL,
       "xor8_filter_resource",
       destroy_xor8_filter_resource,
-      ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER,
-      NULL
-   );
-}
-
-ErlNifResourceType*
-exor_t_resource_type_fun(ErlNifEnv* env)
-{
-   return enif_open_resource_type(
-      env,
-      NULL,
-      "destroy_exor_t_resource",
-      destroy_exor_t_resource,
       ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER,
       NULL
    );
@@ -188,7 +187,7 @@ exor_add_to_filter_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
    exor_t* filter;
    uint64_t* value_list;
-   unsigned list_length;
+   int32_t list_length;
 
    if(argc != 2)
    {
@@ -205,10 +204,12 @@ exor_add_to_filter_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
       return enif_make_badarg(env);
    }
 
-   if(!enif_get_list_length(env, argv[value_list_position], &list_length))
+   unsigned list_length_temp;
+   if(!enif_get_list_length(env, argv[value_list_position], &list_length_temp))
    {
       return mk_error(env, "get_list_length_error");
    }
+   list_length = (int32_t) list_length_temp;
 
    value_list = enif_alloc(sizeof(uint64_t) * list_length);
 
@@ -223,10 +224,9 @@ exor_add_to_filter_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
    }
 
    // We need to resize the array, if needed.
-   // Go with doubling for now.
-   int32_t new_size = filter->size * 2;
-   if(filter->size - filter->position <= list_length)
+   if(filter->size - filter->position < list_length)
    {
+      int32_t new_size = (filter->size + list_length) * 2;
       uint64_t* new_buffer = enif_alloc(sizeof(uint64_t) * new_size);
 
       memcpy(new_buffer, filter->buffer, sizeof(uint64_t) * filter->position);
@@ -234,13 +234,12 @@ exor_add_to_filter_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
       filter->buffer = new_buffer;
       filter->size = new_size;
    }
-
+   
    // Avoiding memcpy for now.
-   for(int i = filter->position; i < list_length; i++)
+   for(int i = 0; i < list_length; i++)
    {
-      filter->buffer[i] = value_list[i];
+      filter->buffer[i + filter->position] = value_list[i];
    }
-
    filter->position += list_length;
 
    enif_free(value_list);
@@ -361,20 +360,13 @@ xor8_finalize_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
    if(!xor8_allocate(data_struct->position, filter))
    {
-      enif_free(data_struct->buffer);
-      enif_release_resource(filter);
       return mk_error(env, "xor8_allocate_error");
    }
 
    if(!xor8_populate(data_struct->buffer, data_struct->position, filter))
    {
-      enif_free(data_struct->buffer);
-      xor8_free(filter);
-      enif_release_resource(filter);
       return mk_error(env, "duplicates_in_hash_error");
    }
-
-   enif_free(data_struct->buffer);
 
    ERL_NIF_TERM res = enif_make_resource(env, filter);
    enif_release_resource(filter);
@@ -617,20 +609,13 @@ xor16_finalize_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
    if(!xor16_allocate(data_struct->position, filter))
    {
-      enif_free(data_struct->buffer);
-      enif_release_resource(filter);
       return mk_error(env, "xor16_allocate_error");
    }
 
    if(!xor16_populate(data_struct->buffer, data_struct->position, filter))
    {
-      enif_free(data_struct->buffer);
-      xor16_free(filter);
-      enif_release_resource(filter);
       return mk_error(env, "duplicates_in_hash_error");
    }
-
-   enif_free(data_struct->buffer);
 
    ERL_NIF_TERM res = enif_make_resource(env, filter);
    // release this resource now its owned by Erlang
@@ -770,8 +755,8 @@ xor16_from_bin_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 static int
 nif_load(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
 {
-   xor8_resource_type = xor8_filter_resource_type(env);
    exor_t_resource_type = exor_t_resource_type_fun(env);
+   xor8_resource_type = xor8_filter_resource_type(env);
    xor16_resource_type = xor16_filter_resource_type(env);
    return 0;
 }

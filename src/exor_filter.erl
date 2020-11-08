@@ -6,8 +6,6 @@
 %%
 %% They're 'Faster and Smaller Than Bloom and Cuckoo Filters'.
 %%
-%% Be wary of memory usage when using this module.
-%%
 %% Example Usage:
 %%
 %% ```
@@ -52,19 +50,28 @@
 -module(exor_filter).
 
 -export([
+
+   %% Filter agnostic functions.
+   exor_empty/1,
+   exor_add/2,
+
+   %% xor8 functions.
    xor8/1,
    xor8/2,
    xor8_buffered/1,
    xor8_buffered/2,
+   xor8_finalize/1,
    xor8_contain/2,
    xor8_contain/3,
    xor8_to_bin/1,
    xor8_from_bin/1,
 
+   %% xor16 functions.
    xor16/1,
    xor16/2,
    xor16_buffered/1,
    xor16_buffered/2,
+   xor16_finalize/1,
    xor16_contain/2,
    xor16_contain/3,
    xor16_to_bin/1,
@@ -78,6 +85,52 @@
 -type hash_function() :: default_hash | none | fun((any()) -> non_neg_integer()).
 
 -export_type([hash_function/0]).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Initializes empty filter of specified size.  This function will not
+%% work with `contain' unless `finalize' is called.
+%% Adds a `builder' atom to the data, to protect against usage in `contain'.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec exor_empty(non_neg_integer()) -> {builder, reference()} | {error, atom()}.
+
+exor_empty(InitialSize) ->
+   {builder, exor_initialize_empty_filter_nif(InitialSize)}.
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Nif api.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec exor_initialize_empty_filter_nif(non_neg_integer()) -> reference() | {error, atom()}.
+
+exor_initialize_empty_filter_nif(_) ->
+   not_loaded(?LINE).
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Adds values to filter builder.  Applys default hashing to the elements
+%% first.  Duplication checks are not done.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec exor_add({builder, reference()}, list()) -> {builder, reference()} | {error, atom()}.
+
+exor_add({builder, Filter}, Elements) ->
+
+   ElementsNew = lists:map(fun erlang:phash2/1, Elements),
+   {builder, exor_add_to_filter_nif(Filter, ElementsNew)}.
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Nif api.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec exor_add_to_filter_nif(reference(), list()) -> reference() | {error, atom()}.
+
+exor_add_to_filter_nif(_, _) ->
+   not_loaded(?LINE).
+
 
 %%-----------------------------------------------------------------------------
 %% @doc Initializes the xor filter, and runs the default hash function on
@@ -358,6 +411,26 @@ xor8_buffered_initialize_nif_dirty(_) ->
 
 
 %%-----------------------------------------------------------------------------
+%% @doc Fully initializes the filter, and frees the data.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor8_finalize({builder, reference()}) -> {reference(), hash_function()} | {error, atom()}.
+
+xor8_finalize({builder, Filter}) ->
+   {xor8_finalize_nif(Filter), default_hash}.
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Nif api.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor8_finalize_nif(reference()) -> reference() | {error, atom()}.
+
+xor8_finalize_nif(_) ->
+   not_loaded(?LINE).
+
+
+%%-----------------------------------------------------------------------------
 %% @doc Tests to see if the passed argument is in the filter.  The first
 %% argument must be the pre-initialized filter.
 %%
@@ -371,7 +444,11 @@ xor8_buffered_initialize_nif_dirty(_) ->
 %% False if not.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor8_contain({reference() | binary(), hash_function()}, term()) -> true | false.
+-spec xor8_contain({reference() | binary(), hash_function()} | {builder, reference()}, term()) 
+   -> true | false | {error, unfinalized_filter_error}.
+
+xor8_contain({builder, _Filter}, _Key) ->
+   {error, unfinalized_filter_error};
 
 xor8_contain({Filter, default_hash}, Key) ->
     xor8_contain_nif(Filter, erlang:phash2(Key));
@@ -380,8 +457,10 @@ xor8_contain({Filter, HashFunction}, Key) when is_function(HashFunction) ->
    xor8_contain_nif(Filter, HashFunction(Key));
 
 xor8_contain({Filter, _HashFunction}, Key) ->
-   xor8_contain_nif(Filter, Key).
+   xor8_contain_nif(Filter, Key);
 
+xor8_contain(_BadValue, _Key) ->
+   {error, get_key_for_contains_error}.
 
 %%-----------------------------------------------------------------------------
 %% @doc Tests to see if the passed argument is in the filter.  The first
@@ -394,19 +473,22 @@ xor8_contain({Filter, _HashFunction}, Key) ->
 %% not in the filter.
 %% @end
 %%-----------------------------------------------------------------------------
--spec xor8_contain({reference() | binary(), hash_function()}, term(), any())
-   -> true | any().
+-spec xor8_contain({reference() | binary(), hash_function()} | {builder, reference()}, term(), any())
+   -> true | any() | {error, unfinalized_filter_error}.
+
+xor8_contain({builder, _Filter}, _Key, _ReturnValue) ->
+   {error, unfinalized_filter_error};
 
 xor8_contain({Filter, default_hash}, Key, ReturnValue) ->
-    xor8_contain({Filter, default_hash}, erlang:phash2(Key), ReturnValue);
+    xor8_contain(Filter, erlang:phash2(Key), ReturnValue);
 
 xor8_contain({Filter, HashFunction}, Key, ReturnValue) 
    when is_function(HashFunction) ->
    
    HashedKey = HashFunction(Key),
-   xor8_contain({Filter, HashFunction}, HashedKey, ReturnValue);
+   xor8_contain(Filter, HashedKey, ReturnValue);
 
-xor8_contain({Filter, _HashFunction}, Key, ReturnValue) ->
+xor8_contain(Filter, Key, ReturnValue) ->
 
    case xor8_contain_nif(Filter, Key) of
 
@@ -515,6 +597,26 @@ xor16_buffered_initialize_nif_dirty(_) ->
 
 
 %%-----------------------------------------------------------------------------
+%% @doc Fully initializes the filter, and frees the data.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor16_finalize({builder, reference()}) -> {reference(), hash_function()} | {error, atom()}.
+
+xor16_finalize({builder, Filter}) ->
+   {xor16_finalize_nif(Filter), default_hash}.
+
+
+%%-----------------------------------------------------------------------------
+%% @doc Nif api.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec xor16_finalize_nif(reference()) -> reference() | {error, atom()}.
+
+xor16_finalize_nif(_) ->
+   not_loaded(?LINE).
+
+
+%%-----------------------------------------------------------------------------
 %% @doc Tests to see if the passed argument is in the filter.  The first
 %% argument must be the pre-initialized filter.
 %%
@@ -526,7 +628,11 @@ xor16_buffered_initialize_nif_dirty(_) ->
 %% Returns true if the element exists (or if there is a false positive).
 %% False if not.
 %% @end
--spec xor16_contain({reference() | binary(), hash_function()}, term()) -> true | false.
+-spec xor16_contain({reference() | binary(), hash_function()} | {builder, reference()}, term()) 
+   -> true | false | {error, unfinalized_filter_error}.
+
+xor16_contain({builder, _filter}, _Key) ->
+   {error, unfinalized_filter_error};
 
 xor16_contain({Filter, default_hash}, Key) ->
     xor16_contain_nif(Filter, erlang:phash2(Key));
@@ -535,7 +641,10 @@ xor16_contain({Filter, HashFunction}, Key) when is_function(HashFunction) ->
    xor16_contain_nif(Filter, HashFunction(Key));
 
 xor16_contain({Filter, _HashFunction}, Key) ->
-   xor16_contain_nif(Filter, Key).
+   xor16_contain_nif(Filter, Key);
+
+xor16_contain(_BadValue, _Key) ->
+   {error, get_key_for_contains_error}.
 
 
 %%-----------------------------------------------------------------------------
@@ -548,19 +657,22 @@ xor16_contain({Filter, _HashFunction}, Key) ->
 %% The third argument will be returned instead of `false' if the element is
 %% not in the filter.
 %% @end
--spec xor16_contain({reference() | binary(), hash_function()}, term(), any())
-   -> true | any().
+-spec xor16_contain({reference() | binary(), hash_function()} | {builder, reference()}, term(), any())
+   -> true | any() | {error, unfinalized_filter_error}.
+
+xor16_contain({builder, _Filter}, _Key, _ReturnValue) ->
+   {error, unfinalized_filter_error};
 
 xor16_contain({Filter, default_hash}, Key, ReturnValue) ->
-    xor16_contain({Filter, default_hash}, erlang:phash2(Key), ReturnValue);
+    xor16_contain(Filter, erlang:phash2(Key), ReturnValue);
 
 xor16_contain({Filter, HashFunction}, Key, ReturnValue) 
    when is_function(HashFunction) ->
    
    HashedKey = HashFunction(Key),
-   xor16_contain({Filter, HashFunction}, HashedKey, ReturnValue);
+   xor16_contain(Filter, HashedKey, ReturnValue);
 
-xor16_contain({Filter, _HashFunction}, Key, ReturnValue) ->
+xor16_contain(Filter, Key, ReturnValue) ->
 
    case xor16_contain_nif(Filter, Key) of
 

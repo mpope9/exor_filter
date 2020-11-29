@@ -1,6 +1,14 @@
+/**
+ * @brief An Erlang NIF wrapper for xor_filters.
+ *
+ */
 #include <stdint.h>
 #include <string.h>
 #include "erl_nif.h"
+
+// Bitset helper macros.
+#define SET_BIT(A, k)   ( A[(k) / sizeof(uint8_t)] != (1 << ((k) % sizeof(uint8_t))) )
+#define GET_BIT(A, k)   ( A[(k) / sizeof(uint8_t)] & (1 << ((k) % sizeof(uint8_t))) )
 
 #define malloc(size) enif_alloc(size)
 #define free(size) enif_free(size)
@@ -15,6 +23,8 @@ typedef struct exor_t {
    uint64_t* buffer;    // Partial data to fill filter.
    uint64_t size;       // Size of data.
    uint64_t position;   // Current array position.
+   uint64_t max;        // Maximum value to compute bitset size.
+   uint64_t min;        // Minimum value to compute bitset size.
 } exor_t;
 
 // portable encoding/decoding helpers
@@ -181,12 +191,11 @@ exor_initialize_empty_filter_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM ar
 static ERL_NIF_TERM
 exor_add_to_filter_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-   ERL_NIF_TERM is_list = argv[1];
+   ERL_NIF_TERM list = argv[1];
    int filter_position = 0;
    int value_list_position = 1;
 
    exor_t* filter;
-   uint64_t* value_list;
    int32_t list_length;
 
    if(argc != 2)
@@ -199,7 +208,7 @@ exor_add_to_filter_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
       return mk_error(env, "invalid_filter");
    }
 
-   if(!enif_is_list(env, is_list))
+   if(!enif_is_list(env, list))
    {
       return enif_make_badarg(env);
    }
@@ -211,38 +220,28 @@ exor_add_to_filter_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
    }
    list_length = (int32_t) list_length_temp;
 
-   value_list = enif_alloc(sizeof(uint64_t) * list_length);
-
-   if(value_list == NULL) 
-   {
-      return mk_error(env, "could_not_allocate_memory_error");
-   }
-
-   if(!(fill_buffer(value_list, env, argv[value_list_position]))) {
-      enif_free(value_list);
-      return mk_error(env, "convert_to_uint64_t_error");
-   }
-
    // We need to resize the array, if needed.
    if(filter->size - filter->position < list_length)
    {
       int32_t new_size = (filter->size + list_length) * 2;
-      uint64_t* new_buffer = enif_alloc(sizeof(uint64_t) * new_size);
-
-      memcpy(new_buffer, filter->buffer, sizeof(uint64_t) * filter->position);
-      enif_free(filter->buffer);
-      filter->buffer = new_buffer;
+      enif_realloc(filter->buffer, sizeof(uint64_t) * new_size);
       filter->size = new_size;
    }
    
-   // Avoiding memcpy for now.
-   for(int i = 0; i < list_length; i++)
+   // Direct copy from list to buffer.
+   ERL_NIF_TERM head;
+   uint64_t current = 0;
+   for(int i = 0; enif_get_list_cell(env, list, &head, (ERL_NIF_TERM*) &list); i++) 
    {
-      filter->buffer[i + filter->position] = value_list[i];
+      if(!enif_get_uint64(env, head, &current)) 
+      {
+         // On failure, do not increase filter position.
+         return mk_error(env, "convert_to_uint64_t_error");
+      }
+      filter->buffer[i + filter->position] = current;
    }
    filter->position += list_length;
 
-   enif_free(value_list);
    ERL_NIF_TERM res = enif_make_resource(env, filter);
    return res;
 }

@@ -35,7 +35,7 @@ For rebar3:
 %% rebar.config
 
 {deps, [
-  {exor_filter, {git, "git://github.com/mpope9/exor_filter", {tag, "v0.6.0"}}}
+  {exor_filter, {git, "git://github.com/mpope9/exor_filter", {tag, "v0.7.0"}}}
 ]}.
 ```
 
@@ -45,7 +45,7 @@ For Mix:
 
 defp deps do
   [
-    {:exor_filter, github: "mpope9/exor_filter", tag: "v0.6.0"}
+    {:exor_filter, github: "mpope9/exor_filter", tag: "v0.7.0"}
   ]
 end
 ```

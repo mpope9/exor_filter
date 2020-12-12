@@ -74,12 +74,13 @@ true    = xor8:contain(Filter2, 5).
 ```
 
 ### Incremental Initialization
+This is now the preferred method of usage.
 To create a filter incrementally, the following API should be used.  It is more memory efficient than providing the entire list at initialization time.
 Only the default hashing method is supported.  [See the hashing section](#hashing) for more details.
 This method will automatically deduplicate the input safely.
 **WARNING**: Currently, the incremental API does not use dirty nifs for large input sizes.  Be cautious of this, initialization can block.
 ```erlang
-Filter0 = xor8:new_empty(2),           %% new_empty/0 defaults to 64 elements.  Either function
+Filter0 = xor8:new_empty(),            %% new_empty/0 defaults to 64 elements.  Either function
                                        %% will dynamically allocate more space as 
                                        %% needed while elements are added.
 Filter1 = xor8:add(Filter0, [1, 2]),

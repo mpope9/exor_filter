@@ -2,13 +2,12 @@
  * @brief An Erlang NIF wrapper for xor_filters.
  *
  */
+#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <limits.h>
 #include "erl_nif.h"
-
-// Bitset helper macros.
-#define SET_BIT(A, k)   ( A[(k) / sizeof(uint8_t)] != (1 << ((k) % sizeof(uint8_t))) )
-#define GET_BIT(A, k)   ( A[(k) / sizeof(uint8_t)] & (1 << ((k) % sizeof(uint8_t))) )
+#include "ewok.h"
 
 #define malloc(size) enif_alloc(size)
 #define free(size) enif_free(size)
@@ -20,11 +19,10 @@ static ErlNifResourceType* exor_t_resource_type;
 
 // Wrapper for incramentally filling data.
 typedef struct exor_t {
-   uint64_t* buffer;    // Partial data to fill filter.
+   ewah_bitmap* bitmap; // Compressed bitmap
    uint64_t size;       // Size of data.
-   uint64_t position;   // Current array position.
-   uint64_t max;        // Maximum value to compute bitset size.
-   uint64_t min;        // Minimum value to compute bitset size.
+   int ewah_buffer_fill_iterator;
+   uint64_t* buffer;
 } exor_t;
 
 // portable encoding/decoding helpers
@@ -53,6 +51,10 @@ destroy_exor_t_resource(ErlNifEnv* env, void* obj)
 {
    exor_t* filter = (exor_t*) obj;
 
+   if(filter->bitmap != NULL)
+   {
+      ewah_free(filter->bitmap);
+   }
    if(filter->buffer != NULL)
    {
       enif_free(filter->buffer);
@@ -150,6 +152,76 @@ fill_buffer(uint64_t* buffer, ErlNifEnv* env, ERL_NIF_TERM list)
 }
 
 /**
+ * Add elements to current filter's bitmap.  Sorts the input, creates a temp bitmap,
+ * fills the bitmap from the sorted elements, then xors the temporary bitmap with the 
+ * filter's bitmap.
+ */
+bool add_elements_to_bitset(exor_t* filter, ErlNifEnv* env, ERL_NIF_TERM list, int32_t list_length)
+{
+   ERL_NIF_TERM head;
+   uint64_t current = 0;
+
+   bitmap* bitmap = bitmap_new();
+
+   for(int i = 0; enif_get_list_cell(env, list, &head, (ERL_NIF_TERM*) &list); i++) 
+   {
+      if(!enif_get_uint64(env, head, &current)) 
+      {
+         bitmap_free(bitmap);
+         return false;
+      }
+      bitmap_set(bitmap, current);
+   }
+
+   // Uncompresses ewah. Might be a bit inefficient memory-wise.
+   bitmap_or_ewah(bitmap, filter->bitmap);
+   filter->bitmap = bitmap_to_ewah(bitmap);
+
+   bitmap_free(bitmap);
+
+   return true;
+}
+
+/**
+ * Callback to transform ewah to buffer to pass to the xor_filter.
+ */
+static void ewah_to_array(size_t value, void* payload)
+{
+   exor_t* filter = (exor_t*) payload;
+   filter->buffer[filter->ewah_buffer_fill_iterator] = value;
+   ++filter->ewah_buffer_fill_iterator;
+}
+
+/** 
+ * Callback to sum up ewah without de-compressing it.
+ */
+static void count_ewah(size_t value, void* payload)
+{
+   exor_t* filter = (exor_t*) payload;
+   ++filter->size;
+}
+
+/**
+ * Returns an array of all of the filter's elements.
+ */
+bool bitset_to_array(exor_t* filter)
+{
+   ewah_each_bit(filter->bitmap, count_ewah, filter);
+   filter->buffer = enif_alloc(sizeof(uint64_t) * filter->size);
+   if(!filter->buffer)
+   {
+      return false;
+   }
+   filter->ewah_buffer_fill_iterator = 0;
+
+   ewah_each_bit(filter->bitmap, ewah_to_array, filter);
+   ewah_free(filter->bitmap);
+   filter->bitmap = NULL;
+
+   return true;
+}
+
+/**
  * Initialization for an empty filter that needs to be filled incrementally.
  * We do not initialize the xor filter here.  We need to be sure of the final
  * data size.
@@ -158,15 +230,7 @@ fill_buffer(uint64_t* buffer, ErlNifEnv* env, ERL_NIF_TERM list)
 static ERL_NIF_TERM
 exor_initialize_empty_filter_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-   int size_position = 0;
-   int initial_size;
-
-   if(argc != 1)
-   {
-      return enif_make_badarg(env);
-   }
-
-   if(!enif_get_int(env, argv[size_position], &initial_size))
+   if(argc != 0)
    {
       return enif_make_badarg(env);
    }
@@ -174,9 +238,8 @@ exor_initialize_empty_filter_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM ar
    exor_t* filter = 
       enif_alloc_resource(exor_t_resource_type, sizeof(exor_t));
 
-   filter->buffer = enif_alloc(sizeof(uint64_t) * initial_size);
-   filter->size = initial_size;
-   filter->position = 0;
+   filter->bitmap = ewah_new();
+   filter->size = 0;
 
    ERL_NIF_TERM res = enif_make_resource(env, filter);
    // release this resource now its owned by Erlang
@@ -220,32 +283,14 @@ exor_add_to_filter_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
    }
    list_length = (int32_t) list_length_temp;
 
-   // We need to resize the array, if needed.
-   if(filter->size - filter->position < list_length)
+   if(!add_elements_to_bitset(filter, env, list, list_length))
    {
-      int32_t new_size = (filter->size + list_length) * 2;
-      enif_realloc(filter->buffer, sizeof(uint64_t) * new_size);
-      filter->size = new_size;
+      return mk_error(env, "convert_to_uint64_t_error");
    }
-   
-   // Direct copy from list to buffer.
-   ERL_NIF_TERM head;
-   uint64_t current = 0;
-   for(int i = 0; enif_get_list_cell(env, list, &head, (ERL_NIF_TERM*) &list); i++) 
-   {
-      if(!enif_get_uint64(env, head, &current)) 
-      {
-         // On failure, do not increase filter position.
-         return mk_error(env, "convert_to_uint64_t_error");
-      }
-      filter->buffer[i + filter->position] = current;
-   }
-   filter->position += list_length;
 
    ERL_NIF_TERM res = enif_make_resource(env, filter);
    return res;
 }
-
 
 /* Begin xor8 nif code */
 static ERL_NIF_TERM
@@ -357,15 +402,25 @@ xor8_finalize_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
    xor8_t* filter = 
       enif_alloc_resource(xor8_resource_type, sizeof(xor8_t));
 
-   if(!xor8_allocate(data_struct->position, filter))
+   if(!xor8_allocate(data_struct->size, filter))
    {
       return mk_error(env, "xor8_allocate_error");
    }
 
-   if(!xor8_populate(data_struct->buffer, data_struct->position, filter))
+   bitset_to_array(data_struct);
+   if(!data_struct->buffer)
    {
+      return mk_error(env, "xor8_allocate_bitmap_error");
+   }
+
+   if(!xor8_populate(data_struct->buffer, data_struct->size, filter))
+   {
+      // Shouldn't happen.
       return mk_error(env, "duplicates_in_hash_error");
    }
+
+   enif_free(data_struct->buffer);
+   data_struct->buffer = NULL;
 
    ERL_NIF_TERM res = enif_make_resource(env, filter);
    enif_release_resource(filter);
@@ -528,7 +583,8 @@ xor16_initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int buffer
       return mk_error(env, "could_not_allocate_memory_error");
    }
 
-   if(!(fill_buffer(value_list, env, argv[0]))) {
+   if(!(fill_buffer(value_list, env, argv[0]))) 
+   {
       enif_free(value_list);
       return mk_error(env, "convert_to_uint64_t_error");
    }
@@ -606,15 +662,24 @@ xor16_finalize_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
    xor16_t* filter = 
       enif_alloc_resource(xor16_resource_type, sizeof(xor16_t));
 
-   if(!xor16_allocate(data_struct->position, filter))
+   if(!xor16_allocate(data_struct->size, filter))
    {
       return mk_error(env, "xor16_allocate_error");
    }
 
-   if(!xor16_populate(data_struct->buffer, data_struct->position, filter))
+   bitset_to_array(data_struct);
+   if(!data_struct->buffer)
+   {
+      return mk_error(env, "xor16_allocate_bitmap_error");
+   }
+
+   if(!xor16_populate(data_struct->buffer, data_struct->size, filter))
    {
       return mk_error(env, "duplicates_in_hash_error");
    }
+
+   enif_free(data_struct->buffer);
+   data_struct->buffer = NULL;
 
    ERL_NIF_TERM res = enif_make_resource(env, filter);
    // release this resource now its owned by Erlang
@@ -763,7 +828,7 @@ nif_load(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
 static ErlNifFunc nif_funcs[] = {
 
    // Filter agnostic functions.
-   {"exor_initialize_empty_filter_nif", 1, exor_initialize_empty_filter_nif},
+   {"exor_initialize_empty_filter_nif", 0, exor_initialize_empty_filter_nif},
    {"exor_add_to_filter_nif", 2, exor_add_to_filter_nif},
 
    // Filter dependent functions.

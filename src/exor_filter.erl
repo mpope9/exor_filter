@@ -52,7 +52,7 @@
 -export([
 
    %% Filter agnostic functions.
-   exor_empty/1,
+   exor_empty/0,
    exor_add/2,
 
    %% xor8 functions.
@@ -93,19 +93,19 @@
 %% Adds a `builder' atom to the data, to protect against usage in `contain'.
 %% @end
 %%-----------------------------------------------------------------------------
--spec exor_empty(non_neg_integer()) -> {builder, reference()} | {error, atom()}.
+-spec exor_empty() -> {builder, reference()} | {error, atom()}.
 
-exor_empty(InitialSize) ->
-   {builder, exor_initialize_empty_filter_nif(InitialSize)}.
+exor_empty() ->
+   {builder, exor_initialize_empty_filter_nif()}.
 
 
 %%-----------------------------------------------------------------------------
 %% @doc Nif api.
 %% @end
 %%-----------------------------------------------------------------------------
--spec exor_initialize_empty_filter_nif(non_neg_integer()) -> reference() | {error, atom()}.
+-spec exor_initialize_empty_filter_nif() -> reference() | {error, atom()}.
 
-exor_initialize_empty_filter_nif(_) ->
+exor_initialize_empty_filter_nif() ->
    not_loaded(?LINE).
 
 

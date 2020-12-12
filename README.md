@@ -35,7 +35,7 @@ For rebar3:
 %% rebar.config
 
 {deps, [
-  {exor_filter, {git, "git://github.com/mpope9/exor_filter", {tag, "v0.6.0"}}}
+  {exor_filter, {git, "git://github.com/mpope9/exor_filter", {tag, "v0.7.0"}}}
 ]}.
 ```
 
@@ -45,7 +45,7 @@ For Mix:
 
 defp deps do
   [
-    {:exor_filter, github: "mpope9/exor_filter", tag: "v0.6.0"}
+    {:exor_filter, github: "mpope9/exor_filter", tag: "v0.7.0"}
   ]
 end
 ```
@@ -74,12 +74,13 @@ true    = xor8:contain(Filter2, 5).
 ```
 
 ### Incremental Initialization
+This is now the preferred method of usage.
 To create a filter incrementally, the following API should be used.  It is more memory efficient than providing the entire list at initialization time.
 Only the default hashing method is supported.  [See the hashing section](#hashing) for more details.
-**WARNING**: Currently, the incremental API does not use dirty nifs for large input sizes.  Be cautious of this.
-Deduplication / duplicate checks on the data are not implemented yet.  `xor8:finalize/1` will fail if the data contains duplicates.
+This method will automatically deduplicate the input safely.
+**WARNING**: Currently, the incremental API does not use dirty nifs for large input sizes.  Be cautious of this, initialization can block.
 ```erlang
-Filter0 = xor8:new_empty(2),           %% new_empty/0 defaults to 64 elements.  Either function
+Filter0 = xor8:new_empty(),            %% new_empty/0 defaults to 64 elements.  Either function
                                        %% will dynamically allocate more space as 
                                        %% needed while elements are added.
 Filter1 = xor8:add(Filter0, [1, 2]),

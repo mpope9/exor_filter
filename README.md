@@ -30,12 +30,14 @@ The [exor_benchmark](https://github.com/mpope9/exor_bechmark) repo was used to c
 
 ## Installation
 
+[Available on hex.pm!](https://hex.pm/packages/exor_filter).
+
 For rebar3:
 ```erlang
 %% rebar.config
 
 {deps, [
-  {exor_filter, "v0.7.0"}
+  {exor_filter, "0.7.0"}
 ]}.
 ```
 

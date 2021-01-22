@@ -9,7 +9,10 @@
 #include "erl_nif.h"
 #include "ewok.h"
 
-#define malloc(size) enif_alloc(size)
+// This forward declaration is needed because we're using this
+// function to override xorfilter's use of malloc.
+void * xor_nif_zalloc(size_t size);
+#define malloc(size) xor_nif_zalloc(size)
 #define free(size) enif_free(size)
 #include "xorfilter.h"
 
@@ -44,6 +47,24 @@ pack_le_u64(uint8_t * dst, uint64_t val) {
     dst[5] = (val >> 40) & 0xff;
     dst[6] = (val >> 48) & 0xff;
     dst[7] = (val >> 56) & 0xff;
+}
+
+// Allocates 'size' zeroized bytes from the VM.
+//
+// Erlang does not provide a malloc like function which returns
+// zeroized memory. That's not usually a problem, as you can always
+// call memset after allocation memory. However, we're overriding the
+// xorfilter's use malloc by redefining it before including
+// xorfilter.h, leaving us no other option than to the VMs allocator
+// and memset into this function.
+void *
+xor_nif_zalloc(size_t size)
+{
+    void * mem = enif_alloc(size);
+    if (mem) {
+        memset(mem, 0, size);
+    }
+    return mem;
 }
 
 void

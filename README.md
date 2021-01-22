@@ -37,7 +37,7 @@ For rebar3:
 %% rebar.config
 
 {deps, [
-  {exor_filter, "0.7.0"}
+  {exor_filter, "0.7.1"}
 ]}.
 ```
 
@@ -47,7 +47,7 @@ For Mix:
 
 defp deps do
   [
-    {:exor_filter, "~> 0.7.0"}
+    {:exor_filter, "~> 0.7.1"}
   ]
 end
 ```

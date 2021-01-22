@@ -240,6 +240,7 @@ exor_initialize_empty_filter_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM ar
 
    filter->bitmap = ewah_new();
    filter->size = 0;
+   filter->buffer = NULL;
 
    ERL_NIF_TERM res = enif_make_resource(env, filter);
    // release this resource now its owned by Erlang

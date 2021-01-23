@@ -197,7 +197,10 @@ xor8_serialization() ->
    ?assertEqual(false, xor8:contain(BinFilter, "test4")),
    Filter2 = xor8:from_bin(BinFilter),
    ?assertEqual(true, xor8:contain(Filter2, "test1")),
-   ?assertEqual(false, xor8:contain(Filter2, "test4")).
+   ?assertEqual(false, xor8:contain(Filter2, "test4")),
+   Filter3 = xor8:new(["test1", "test2", "test3"]),
+   BinFilter2 = xor8:to_bin(Filter3),
+   ?assertEqual(BinFilter, BinFilter2).
 
 xor8_incremental_builder() ->
    Filter0 = xor8:new_empty(),
@@ -403,7 +406,10 @@ xor16_serialization() ->
    ?assertEqual(false, xor16:contain(BinFilter, "test4")),
    Filter2 = xor16:from_bin(BinFilter),
    ?assertEqual(true, xor16:contain(Filter2, "test1")),
-   ?assertEqual(false, xor16:contain(Filter2, "test4")).
+   ?assertEqual(false, xor16:contain(Filter2, "test4")),
+   Filter3 = xor16:new(["test1", "test2", "test3"]),
+   BinFilter2 = xor16:to_bin(Filter3),
+   ?assertEqual(BinFilter, BinFilter2).
 
 xor16_incremental_builder() ->
    Filter0 = xor16:new_empty(),

@@ -1,6 +1,6 @@
 {application, exor_filter,
  [{description, "Nif wrapper for xor_filters."},
-  {vsn, "0.7.0"},
+  {vsn, "0.8.0"},
   {registered, []},
   {applications,
    [kernel,

@@ -1,6 +1,8 @@
 exor_filter
 =====
 
+[![Github All Releases](https://img.shields.io/github/downloads/mpope9/exor_filter/total.svg)]()
+
 Nif wrapper for the xor_filter: https://github.com/FastFilter/xor_singleheader
 
 They're 'Faster and Smaller Than Bloom and Cuckoo Filters'.
